@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.17.1)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.18.2)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -1021,6 +1021,26 @@ body {
 .loot-source-card strong{display:block;color:var(--gold-light);font-family:Cinzel,serif}
 .loot-source-card span{display:block;font-size:.75rem;color:var(--parchment-dark);margin-top:3px}
 @media(max-width:520px){.loot-source-grid{grid-template-columns:1fr}}
+
+.explore-container{display:none}
+.explore-container.active{display:block}
+.explore-subtitle{font-family:Cinzel,serif;color:var(--gold-light);font-size:.9rem;margin-top:-4px}
+.explore-note{color:var(--parchment-dark);line-height:1.45}
+.explore-status{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.explore-status span{font-size:.75rem;border:1px solid rgba(212,168,67,.18);padding:5px 7px;border-radius:6px}
+.explore-locked{padding:14px;border:1px dashed rgba(212,168,67,.25);border-radius:8px;color:var(--parchment-dark)}
+.grind-encounter{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px;border:1px solid rgba(212,168,67,.2);border-radius:8px;margin:8px 0;background:rgba(13,31,51,.5)}
+.grind-name{font-family:Cinzel,serif;color:var(--gold-light)}
+.grind-meta{font-size:.76rem;color:var(--parchment-dark);margin-top:3px}
+.grind-desc{font-size:.8rem;color:var(--parchment-dark);margin-top:4px}
+.grind-fight{min-width:70px}
+
+.book4-roadmap-note{color:var(--parchment-dark);line-height:1.45}
+.book4-row{display:flex;gap:10px;padding:8px 0;border-top:1px solid rgba(212,168,67,.10);align-items:flex-start}
+.book4-ch{width:58px;flex:0 0 58px;color:var(--gold-light);font-family:Cinzel,serif;font-size:.78rem}
+.book4-title{flex:1;color:var(--parchment);font-family:Cinzel,serif}
+.book4-type{display:block;font-family:inherit;font-size:.68rem;color:var(--parchment-dark);margin-top:2px;text-transform:uppercase;letter-spacing:.06em}
+.book4-boss{display:inline-block;margin-top:5px;padding:3px 6px;border:1px solid rgba(212,168,67,.2);border-radius:5px;font-family:inherit;font-size:.68rem;color:var(--gold-light)}
 </style>
 <!--
 AETHON CODEX ART MANIFEST
@@ -1094,6 +1114,7 @@ Add/update paths only in ART_ASSETS above.
       <button class="nav-tab" data-tab="inventory" onclick="switchTab('inventory')">Inventory</button>
       <button class="nav-tab" data-tab="loot" onclick="switchTab('loot')">Loot</button>
       <button class="nav-tab" data-tab="trader" onclick="switchTab('trader')">Trader</button>
+<button class="nav-tab" data-tab="explore" onclick="switchTab('explore')">Explore</button>
       <button class="nav-tab" data-tab="battle" onclick="switchTab('battle')" id="battleNavTab">Battle</button>
     </nav>
     <div class="save-controls">
@@ -1128,6 +1149,16 @@ Add/update paths only in ART_ASSETS above.
     </div>
 
     <div class="journal-container" id="journalTab">
+<div class="panel book4-roadmap-panel">
+  <div class="panel-title">BOOK 4 · THE OPEN DOORS</div>
+  <p class="book4-roadmap-note">
+    Story map imported from the completed Book 4 material. Combat markers below
+    distinguish actual boss encounters from narrative, repair and exploration chapters.
+    The Bonus Chapter belongs between Chapters 9 and 10.
+  </p>
+  <div class="book4-roadmap-list" id="book4RoadmapList"></div>
+</div>
+
       <div class="journal-layout">
         <div class="journal-sidebar" id="journalSidebar"></div>
         <div class="journal-view" id="journalView"></div>
@@ -1210,6 +1241,24 @@ Add/update paths only in ART_ASSETS above.
 <div id="codexTraderList"></div>
 </div>
 </div>
+
+<div class="explore-container" id="exploreTab">
+  <div class="panel">
+    <div class="panel-title">The Unmapped Road</div>
+    <div class="explore-subtitle">Post-Book 4 Frontier · Repeatable Exploration</div>
+    <p class="explore-note">
+      A new road beyond the completed Book 4 journey. Monsters here return after each encounter,
+      allowing deliberate leveling, gold farming and equipment hunting before the next story gate.
+    </p>
+    <div class="explore-status">
+      <span>Zone: The Unmapped Road</span>
+      <span>Respawn: Automatic</span>
+      <span>Story: Optional</span>
+    </div>
+    <div id="grindEncounterList"></div>
+  </div>
+</div>
+
 <div class="battle-container" id="battleTab">
       <div class="panel">
         <div class="panel-title">Battle Arena</div>
@@ -3477,6 +3526,10 @@ function nextTurn() {
 
     if (battle.boss.hp <= 0) {
       battle.boss.hp = 0;
+      if (battle.grind) {
+        finishGrindingBattle();
+        return;
+      }
       battle.active = false;
       battle.winner = 'party';
       codexAwardBossLoot(battle.chapterId, battle.boss && battle.boss.name);
@@ -3515,6 +3568,10 @@ function playerAction(actionType, spellIndex) {
   const finishPlayerAction = () => {
     if (battle.boss.hp <= 0) {
       battle.boss.hp = 0;
+      if (battle.grind) {
+        finishGrindingBattle();
+        return;
+      }
       battle.active = false;
       battle.winner = 'party';
       codexAwardBossLoot(battle.chapterId, battle.boss && battle.boss.name);
@@ -3743,7 +3800,12 @@ function renderBattle() {
       html += '<div style="text-align:center;margin-top:20px;">';
       html += '<h3 style="color:var(--green-accent);font-family:Cinzel,serif;">VICTORY!</h3>';
       html += '<p style="color:var(--parchment);">The ' + boss.name + ' has been defeated!</p>';
-      html += '<button class="btn-quest complete" onclick="completeBattleQuest()" style="margin-top:12px;">Complete Quest</button>';
+      if (battle.grind) {
+        html += '<p style="color:var(--parchment-dark);">The road will repopulate. You can return for another encounter.</p>';
+        html += '<button class="btn-quest complete" onclick="switchTab(\'explore\')" style="margin-top:12px;">Return to The Unmapped Road</button>';
+      } else {
+        html += '<button class="btn-quest complete" onclick="completeBattleQuest()" style="margin-top:12px;">Complete Quest</button>';
+      }
       html += '</div>';
     } else {
       html += '<div style="text-align:center;margin-top:20px;">';
@@ -3792,6 +3854,10 @@ function completeBattleQuest() {
 function retryBattle() {
   const battle = gameState.battleState;
   if (!battle) return;
+  if (battle.grind) {
+    startGrindingBattle(battle.grindZoneId,battle.grindEncounterId);
+    return;
+  }
   initBattle(battle.chapterId);
 }
 
@@ -3937,6 +4003,166 @@ function renderTrader() {
   }).join('');
 }
 
+
+/* ============================================================
+   POST-BOOK 4 FRONTIER — v12.18
+   "The Unmapped Road" is a gameplay extension of the exploration
+   path established in Book 4 Chapter 13. The repeatable combat,
+   rewards and encounter names below are Codex gameplay design,
+   not additional Book 4 story chapters.
+   ============================================================ */
+const CODEX_GRIND_ZONES = {
+  unmappedRoad: {
+    name:'The Unmapped Road',
+    unlockRule:()=>Boolean(gameState.book4Complete) || Number(gameState.currentBook||1)>=4 || Number(gameState.level||1)>=20,
+    encounters:[
+      {id:'road_wisp',name:'Road Wisp',icon:'✦',hp:70,ac:12,damage:4,xp:90,gold:18,
+       phase:'Flickering',desc:'A wandering spark left behind by the repaired road.'},
+      {id:'fracture_hound',name:'Fracture Hound',icon:'🐺',hp:110,ac:13,damage:6,xp:135,gold:26,
+       phase:'Unstable',desc:'A creature that follows the seams between paths.'},
+      {id:'echo_guardian',name:'Echo Guardian',icon:'⚔️',hp:160,ac:15,damage:8,xp:210,gold:40,
+       phase:'Resolute',desc:'A stronger sentinel encountered deeper along the road.'}
+    ]
+  }
+};
+
+function renderExplore() {
+  const list=document.getElementById('grindEncounterList');
+  if(!list)return;
+  const zone=CODEX_GRIND_ZONES.unmappedRoad;
+  const unlocked=zone.unlockRule();
+  if(!unlocked){
+    list.innerHTML='<div class="explore-locked">The Unmapped Road becomes available after the Book 4 journey.</div>';
+    return;
+  }
+  list.innerHTML=zone.encounters.map((e,i)=>
+    '<div class="grind-encounter">'+
+      '<div><div class="grind-name">'+e.icon+' '+e.name+'</div>'+
+      '<div class="grind-meta">HP '+e.hp+' · AC '+e.ac+' · XP '+e.xp+' · '+e.gold+'G</div>'+
+      '<div class="grind-desc">'+e.desc+'</div></div>'+
+      '<button class="grind-fight" onclick="startGrindingBattle(\'unmappedRoad\',\''+e.id+'\')">Fight</button>'+
+    '</div>'
+  ).join('');
+}
+
+function startGrindingBattle(zoneId,encounterId) {
+  const zone=CODEX_GRIND_ZONES[zoneId];
+  const encounter=zone && zone.encounters.find(x=>x.id===encounterId);
+  if(!encounter || !zone.unlockRule())return false;
+
+  const san=getPartyMember('san');
+  if(!san)return false;
+
+  // Restore active party between repeatable encounters.
+  gameState.party.forEach(p=>{
+    if(p.active && p.joined){
+      p.currentHP=p.stats.hp;
+      p.currentMP=p.stats.mp;
+      p.buffs=[]; p.debuffs=[];
+    }
+  });
+
+  const activeParty=getActiveParty().filter(p=>p.currentHP>0);
+  gameState.battleInputLocked=false;
+  gameState.battleState={
+    chapterId:null,
+    grind:true,
+    grindZoneId:zoneId,
+    grindEncounterId:encounterId,
+    boss:{
+      name:encounter.name,
+      icon:encounter.icon,
+      hp:encounter.hp,
+      maxHP:encounter.hp,
+      ac:encounter.ac,
+      phaseIndex:0,
+      phases:[{name:encounter.phase,damage:encounter.damage,desc:encounter.desc}]
+    },
+    turnIndex:-1,turnOrder:[],round:1,log:[],
+    active:true,waitingForPlayer:false,narrative:'A repeatable encounter begins.',
+    winner:null
+  };
+
+  gameState.battleState.turnOrder=activeParty.map(p=>({
+    id:p.id,initiative:rollDie(20)+getModifier(Number(p.stats.spd)||10)
+  })).sort((a,b)=>b.initiative-a.initiative);
+
+  if(!gameState.battleState.turnOrder.length){
+    gameState.battleState=null;
+    showNotification('No active party members are available.');
+    return false;
+  }
+
+  addCombatLog('=== '+encounter.name+' appears on The Unmapped Road! ===','info');
+  switchTab('battle');
+  nextTurn();
+  return true;
+}
+
+function finishGrindingBattle() {
+  const battle=gameState.battleState;
+  if(!battle || !battle.grind)return;
+  const zone=CODEX_GRIND_ZONES[battle.grindZoneId];
+  const encounter=zone && zone.encounters.find(x=>x.id===battle.grindEncounterId);
+  if(!encounter)return;
+
+  addXP(encounter.xp);
+  gameState.gold=Number(gameState.gold||0)+Number(encounter.gold||0);
+
+  // Small chance of a repeatable monster drop. Boss loot remains separate.
+  if(Math.random()<0.18){
+    const drops=getCodexLoot('monster');
+    if(drops.length){
+      const drop=drops[Math.floor(Math.random()*drops.length)];
+      codexEnsureEquipmentInventory().push({...drop,acquiredFrom:'monster',repeatable:true});
+      addCombatLog('Monster drop: '+drop.name+'!','loot');
+      showNotification('Loot acquired: '+drop.name);
+    }
+  }
+
+  addCombatLog('Reward: +'+encounter.xp+' XP · +'+encounter.gold+'G','heal');
+  battle.active=false;
+  battle.winner='party';
+  battle.waitingForPlayer=false;
+  gameState.battleInputLocked=false;
+  saveGame();
+  renderBattle();
+}
+
+
+const CODEX_BOOK4_ROADMAP = [
+  {id:1,title:'The Door System Built on Purpose',type:'story / system',boss:''},
+  {id:2,title:'The Tribunal of Every Echo',type:'combat',boss:'The Splinter Court'},
+  {id:3,title:'The First Break',type:'repair / story',boss:''},
+  {id:4,title:'The Slow Work',type:'combat / repair',boss:'The Unmended'},
+  {id:5,title:'A Setback Is Not a Failure',type:'combat / recurring fracture',boss:'The Relapse'},
+  {id:6,title:'The Question of After',type:'story / repair',boss:''},
+  {id:7,title:'Everyone, Together',type:'trial / party challenge',boss:''},
+  {id:8,title:'Daybreak',type:'story / world-spirit confirmation',boss:''},
+  {id:9,title:'The Pace of Tomorrow',type:'story / transition',boss:''},
+  {id:'bonus',title:'The Door We Leave Open',type:'bonus / relationship',boss:''},
+  {id:10,title:'The Children Before Me',type:'story / memory',boss:''},
+  {id:11,title:'The Things We Choose Not to Repeat',type:'story / memory',boss:''},
+  {id:12,title:'The Things We Carry Home',type:'story / memory',boss:''},
+  {id:13,title:'The Wayfinder',type:'exploration',boss:''},
+  {id:14,title:'The Borrowed Coast',type:'combat',boss:'The Tidereaver'},
+  {id:15,title:'The Salt Debt',type:'combat',boss:'The Ledgerbound'},
+  {id:16,title:'The Undertow',type:'combat',boss:'The Undertow'},
+  {id:17,title:'The Horizon Keeper',type:'combat / act ending',boss:'The Horizon Keeper'}
+];
+
+function renderBook4Roadmap(){
+  const el=document.getElementById('book4RoadmapList');
+  if(!el)return;
+  el.innerHTML=CODEX_BOOK4_ROADMAP.map((c,i)=>{
+    const label=c.id==='bonus'?'BONUS':('CH. '+c.id);
+    const boss=c.boss?'<span class="book4-boss">⚔ '+c.boss+'</span>':'';
+    return '<div class="book4-row">'+
+      '<div class="book4-ch">'+label+'</div>'+
+      '<div class="book4-title">'+c.title+'<span class="book4-type">'+c.type+'</span>'+boss+'</div>'+
+      '</div>';
+  }).join('');
+}
 function switchTab(tab) {
   gameState.currentTab = tab;
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -3945,20 +4171,21 @@ function switchTab(tab) {
 
   const containers = document.querySelectorAll(
     '.dashboard-container, .journal-container, .party-container, .equipment-container, ' +
-    '.inventory-container, .loot-container, .trader-container, .battle-container'
+    '.inventory-container, .loot-container, .trader-container, .explore-container, .battle-container'
   );
   containers.forEach(c => c.classList.remove('active'));
 
   const content = document.getElementById(tab + 'Tab');
   if (content) content.classList.add('active');
 
-  if (tab === 'journal') renderJournal();
+  if (tab === 'journal') { renderJournal(); renderBook4Roadmap(); }
   if (tab === 'party') renderParty();
   if (tab === 'equipment') renderEquipmentFoundation();
   if (tab === 'inventory') renderCodexInventory();
   if (tab === 'loot') renderLootFoundation();
   if (tab === 'trader') renderTrader();
   if (tab === 'battle') renderBattle();
+  if (tab === 'explore') renderExplore();
 }
 
 
@@ -3976,16 +4203,40 @@ function unlockNextChapter(chapterId) {
   }
 }
 
+
+function codexXPThreshold(level) {
+  const table = GAME_DATA.xpPerLevel || [];
+  if (level < table.length && Number.isFinite(Number(table[level]))) return Number(table[level]);
+  // The existing table reaches level 19. Beyond that, Codex deliberately
+  // slows progression with a rising threshold rather than stopping the bar.
+  const base = Number(table[table.length - 1] || 19000);
+  let xp = base;
+  for (let lv = table.length; lv <= level; lv++) {
+    xp += Math.round(900 + lv * 180);
+  }
+  return xp;
+}
+
 function addXP(amount) {
-  gameState.xp += amount;
-  showXP(amount);
-  const nextLevelXP = GAME_DATA.xpPerLevel[gameState.level] || 999999;
-  if (gameState.xp >= nextLevelXP) {
+  const gain = Math.max(0, Number(amount) || 0);
+  if (!gain) return;
+
+  gameState.xp += gain;
+  showXP(gain);
+
+  let leveled = 0;
+  while (gameState.xp >= codexXPThreshold(gameState.level + 1)) {
     gameState.level++;
+    leveled++;
+  }
+
+  if (leveled) {
     showNotification('Level Up! You are now level ' + gameState.level);
   }
   updateUI();
+  saveGame();
 }
+
 
 function showNotification(message) {
   const container = document.getElementById('xpNotification');
@@ -4501,10 +4752,12 @@ function updateUI() {
   document.getElementById('playerLevel').textContent = gameState.level;
   document.getElementById('questCount').textContent = completedCount + '/' + totalChapters;
 
-  const nextLevelXP = GAME_DATA.xpPerLevel[gameState.level] || 999999;
-  const prevLevelXP = GAME_DATA.xpPerLevel[gameState.level - 1] || 0;
-  const xpProgress = ((gameState.xp - prevLevelXP) / (nextLevelXP - prevLevelXP)) * 100;
-  document.getElementById('xpBar').style.width = Math.min(xpProgress, 100) + '%';
+  const nextLevelXP = codexXPThreshold(gameState.level + 1);
+  const prevLevelXP = codexXPThreshold(gameState.level);
+  const xpProgress = nextLevelXP > prevLevelXP
+    ? ((gameState.xp - prevLevelXP) / (nextLevelXP - prevLevelXP)) * 100
+    : 0;
+  document.getElementById('xpBar').style.width = Math.max(0, Math.min(xpProgress, 100)) + '%';
 
   const ring = document.getElementById('progressRing');
   const circumference = 2 * Math.PI * 45;
