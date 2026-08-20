@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.16)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.17)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -3829,18 +3829,25 @@ function startBook(bookNum) {
 const CODEX_TRADERS = [
   {
     n:'Lewis', title:'Senior Colleague', zone:'Whispering Woods', zoneLv:1,
-    icon:'🧳', greeting:'Lewis studies the equipment quietly. “You may need something better for the road.”',
+    icon:'🧳',
+    greeting:'Lewis lays out practical equipment for the road. Nothing extravagant — just enough to get started.',
     stock:[
-      {n:'Woodsman Blade', slot:'weapon', atk:2, price:45, d:'Reliable early weapon.'},
-      {n:'Traveler Guard', slot:'armor', defense:2, price:50, d:'Light protective gear.'}
+      {n:'Woodsman Blade', type:'equipment', slot:'weapon', family:'any', atk:2, price:45, d:'A dependable starter weapon.'},
+      {n:'Traveler Guard', type:'equipment', slot:'armor', family:'light', defense:2, price:50, d:'Simple protective gear for the road.'},
+      {n:'Apprentice Focus', type:'equipment', slot:'weapon', family:'san_focus', magic:1, price:55, d:'A modest focus for a beginning sorcerer.'},
+      {n:'Traveler Charm', type:'equipment', slot:'accessory', family:'any', hp:3, price:40, d:'A small charm carried by travelers.'}
     ]
   },
   {
-    n:'Ribald', title:'Arms & Adventuring Merchant', zone:'Later Town', zoneLv:10,
-    icon:'🧳', greeting:'Ribald looks over the party with a knowing smile.',
+    n:'Ribald', title:'Arms & Adventuring Merchant', zone:'Merchant Quarter', zoneLv:10,
+    icon:'🧳',
+    greeting:'Ribald opens a much better-stocked case. Some of these pieces clearly came from adventurers who knew what they were doing.',
     stock:[
-      {n:'Merchant’s Edge', slot:'weapon', atk:4, price:120, d:'A stronger alternative to early loot.'},
-      {n:'Reinforced Guard', slot:'armor', defense:4, price:130, d:'Improved protection.'}
+      {n:'Robe of Vecna', type:'equipment', slot:'armor', family:'caster', magic:8, mp:10, price:1800, d:'BG2-inspired legendary mage robe.'},
+      {n:'Staff of the Magi', type:'equipment', slot:'weapon', family:'staff', magic:7, atk:2, price:2200, d:'BG2-inspired arcane staff.'},
+      {n:'Ring of the Ram', type:'equipment', slot:'accessory', family:'any', magic:4, price:900, d:'BG2-inspired magical ring.'},
+      {n:'Girdle of Hill Giant Strength', type:'equipment', slot:'accessory', family:'any', atk:5, price:1100, d:'BG2-inspired strength-enhancing belt.'},
+      {n:'Flail of Ages', type:'equipment', slot:'weapon', family:'one_hand', atk:8, price:2400, d:'BG2-inspired enchanted flail.'}
     ]
   }
 ];
@@ -3880,7 +3887,18 @@ function buyFromCodexTrader(traderName,itemIndex){
   if(!item)return;
   const price=Number(item.price||0);
   if(Number(gameState.gold||0)<price){showNotification('Not enough gold.');return;}
-  const copy={...item,name:item.n,acquiredFrom:'trader',sourceTrader:traderName};
+  const copy={
+    ...item,
+    name:item.n,
+    type:'equipment',
+    slot:item.slot || (item.t==='weapon' ? 'weapon' : item.t==='armor' ? 'armor' : item.t),
+    atk:Number(item.atk||0),
+    mag:Number(item.mag||item.magic||0),
+    def:Number(item.def||item.defense||0),
+    defense:Number(item.defense||item.def||0),
+    acquiredFrom:'trader',
+    sourceTrader:traderName
+  };
   delete copy.n; delete copy.price;
   codexEnsureEquipmentInventory().push(copy);
   gameState.gold-=price;
