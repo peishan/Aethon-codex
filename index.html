@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.8)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.9)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -1125,6 +1125,14 @@ Add/update paths only in ART_ASSETS above.
       <div class="panel-title">Physical Attack Test</div>
       <div id="physicalEquipmentTest">
         Equipped ATK bonuses are ready for the physical damage calculation.
+      </div>
+    </div>
+
+    <div class="equipment-battle-preview panel">
+      <div class="panel-title">Live Physical Attack Test</div>
+      <div id="livePhysicalTest">
+        <button class="equip-btn" onclick="runLivePhysicalEquipmentTest()">Test equipped ATK on a 100 HP target</button>
+        <div id="livePhysicalResult" class="equipped-row"></div>
       </div>
     </div>
 
@@ -2593,6 +2601,19 @@ function codexPhysicalAttackDamage(characterId, baseDamage) {
   return Math.max(0, Math.floor(Number(baseDamage || 0) + bonus));
 }
 
+
+/* ============================================================
+   CODEX LIVE PHYSICAL ATTACK — v12.9
+   Uses the tested equipment ATK bonus for a controlled physical hit.
+   ============================================================ */
+function codexLivePhysicalAttack(characterId, baseDamage, target) {
+  const damage = codexPhysicalAttackDamage(characterId, baseDamage);
+  if (target && typeof target.hp === 'number') {
+    target.hp = Math.max(0, target.hp - damage);
+  }
+  return damage;
+}
+
 // Party structure — Codex fixed roster
 // The seven original companions are always part of the party.
 // Soel is a familiar and does not consume a party slot.
@@ -3497,6 +3518,16 @@ function renderPhysicalEquipmentTest() {
     return '<div class="equipped-row"><strong>'+names[id]+'</strong> — '+
       'ATK bonus +'+bonus+' · sample 10 → <strong>'+sample+'</strong></div>';
   }).join('');
+}
+
+
+function runLivePhysicalEquipmentTest() {
+  const id='zaki';
+  const target={hp:100};
+  const damage=codexLivePhysicalAttack(id,10,target);
+  const el=document.getElementById('livePhysicalResult');
+  if(el) el.innerHTML='<strong>Zaki</strong> deals '+damage+
+    ' damage with base 10 + equipped ATK, leaving target at '+target.hp+' HP.';
 }
 
 function renderBattle() {
