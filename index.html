@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.13.3)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.13.4)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -2991,21 +2991,27 @@ function showDice(roll, modifier, total, label, callback) {
 
 function addCombatLog(message, type) {
   const log = document.getElementById('combatLog');
-  if (!log) return;
-  const entry = document.createElement('div');
-  entry.className = 'combat-log-entry ' + (type || 'info');
-  entry.textContent = message;
-  log.appendChild(entry);
-  log.scrollTop = log.scrollHeight;
-  const visible = document.getElementById('visibleCombatLog');
-  if (visible) {
-    const lines = (battle.combatLog || []).slice(-8);
-    visible.innerHTML = lines.map(entry =>
-      '<div class="combat-log-line">' + String(entry.text || entry).replace(/</g,'&lt;') + '</div>'
-    ).join('');
-    visible.scrollTop = visible.scrollHeight;
+  if (log) {
+    const entry = document.createElement('div');
+    entry.className = 'combat-log-entry ' + (type || 'info');
+    entry.textContent = message;
+    log.appendChild(entry);
+    log.scrollTop = log.scrollHeight;
   }
 
+  // Keep the compact visible battle log synchronized with the actual DOM log.
+  const visible = document.getElementById('visibleCombatLog');
+  if (visible) {
+    const entries = log ? Array.from(log.querySelectorAll('.combat-log-entry')).slice(-8) : [];
+    visible.innerHTML = entries.length
+      ? entries.map(entry =>
+          '<div class="combat-log-line">' +
+          String(entry.textContent || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') +
+          '</div>'
+        ).join('')
+      : 'Battle messages will appear here.';
+    visible.scrollTop = visible.scrollHeight;
+  }
 }
 
 function showDamagePopup(element, amount, type) {
@@ -3608,11 +3614,15 @@ function runPlayerAttackIntegrationTest() {
 
 function renderVisibleCombatLog() {
   const visible=document.getElementById('visibleCombatLog');
-  const battle=gameState.battleState;
+  const log=document.getElementById('combatLog');
   if(!visible)return;
-  const lines=battle && Array.isArray(battle.combatLog) ? battle.combatLog.slice(-8) : [];
-  visible.innerHTML=lines.length
-    ? lines.map(entry=>'<div class="combat-log-line">'+String(entry.text||entry).replace(/</g,'&lt;')+'</div>').join('')
+  const entries=log ? Array.from(log.querySelectorAll('.combat-log-entry')).slice(-8) : [];
+  visible.innerHTML=entries.length
+    ? entries.map(entry =>
+        '<div class="combat-log-line">' +
+        String(entry.textContent || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') +
+        '</div>'
+      ).join('')
     : 'Battle messages will appear here.';
   visible.scrollTop=visible.scrollHeight;
 }
