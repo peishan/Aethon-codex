@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.13.1)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.13.2)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -1143,12 +1143,7 @@ Add/update paths only in ART_ASSETS above.
         <div id="playerAttackIntegrationResult" class="equipped-row"></div>
       </div>
     </div>
-
-    <div class="equipment-battle-preview panel">
-      <div class="panel-title">Joel Defence Test</div>
-      <button class="equip-btn" onclick="runJoelDefenseTest()">Test 10 damage on Joel</button>
-      <div id="joelDefenseTestResult" class="equipped-row"></div>
-    </div>
+</div>
 
     <div class="battle-container" id="battleTab">
       <div class="panel">
@@ -3330,8 +3325,8 @@ function bossAction() {
 
   damagePartyMember(target.id, dmg);
   addCombatLog(
-    boss.name + ' uses ' + (phase.attack || 'an attack') +
-    ' on ' + target.name + ' for ' + dmg + ' damage!',
+    boss.name + ' → ' + target.name + ' — ' + dmg + ' damage' +
+    (defenseBonus > 0 ? ' (DEF -' + defenseBonus + ')' : ''),
     'damage'
   );
 
