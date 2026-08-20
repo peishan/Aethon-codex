@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v11.4)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v11.5)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -2835,6 +2835,16 @@ function updateBossPhase() {
 }
 
 function aiAction(member) {
+  const narrativeByRole = {
+    senedra: current.name + ' releases a rapid volley of arrows!',
+    joel: current.name + ' charges forward, shield raised — Shield Wall!',
+    aisyah: current.name + ' darts forward with both blades ready!',
+    mezstorm: current.name + ' gathers arcane energy!',
+    eliz: current.name + ' raises her healing power!',
+    zaki: current.name + ' surges forward with his weapon!'
+  };
+  battle.narrative = narrativeByRole[current.id] || current.name + ' prepares to act...';
+
   const battle = gameState.battleState;
   const boss = battle.boss;
 
@@ -2988,6 +2998,16 @@ function nextTurn() {
     if (!battle.active) return;
 
     aiAction(current);
+    if (battle.boss.hp <= 0) {
+      battle.boss.hp = 0;
+      battle.active = false;
+      battle.winner = 'party';
+      battle.waitingForPlayer = false;
+      gameState.battleInputLocked = false;
+      addCombatLog('=== ' + battle.boss.name + ' has been defeated! ===', 'crit');
+      renderBattle();
+      return;
+    }
     if (!battle.active) {
       renderBattle();
       return;
@@ -3030,6 +3050,19 @@ function playerAction(actionType, spellIndex) {
   gameState.battleInputLocked = true;
 
   const finishPlayerAction = () => {
+    // Resolve victory immediately. A defeated boss must never receive another
+    // turn and the battle must enter the existing victory/Complete Quest UI.
+    if (battle.boss.hp <= 0) {
+      battle.boss.hp = 0;
+      battle.active = false;
+      battle.winner = 'party';
+      battle.waitingForPlayer = false;
+      gameState.battleInputLocked = false;
+      addCombatLog('=== ' + battle.boss.name + ' has been defeated! ===', 'crit');
+      renderBattle();
+      return;
+    }
+
     renderBattle();
     if (!battle.active) {
       gameState.battleInputLocked = false;
@@ -3039,6 +3072,19 @@ function playerAction(actionType, spellIndex) {
     setTimeout(() => {
       if (!battle.active) return;
       bossAction();
+
+      // Boss actions can also end the battle.
+      if (battle.boss.hp <= 0) {
+        battle.boss.hp = 0;
+        battle.active = false;
+        battle.winner = 'party';
+        battle.waitingForPlayer = false;
+        gameState.battleInputLocked = false;
+        addCombatLog('=== ' + battle.boss.name + ' has been defeated! ===', 'crit');
+        renderBattle();
+        return;
+      }
+
       renderBattle();
       if (battle.active) {
         advanceBattleTurn();
