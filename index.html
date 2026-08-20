@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.5)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.6)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -2489,6 +2489,44 @@ function codexEquippedFor(characterId) {
   return state[characterId] || {weapon:null,armor:null,accessory:null};
 }
 
+
+/* ============================================================
+   CODEX EQUIPMENT COMBAT STATS — v12.6
+   Phase 5: equipped gear contributes to battle calculations.
+   Simple additive bonuses only.
+   ============================================================ */
+function codexEquipmentBonus(characterId) {
+  const e = codexEquippedFor(characterId);
+  let atk = 0, magic = 0, defense = 0, hp = 0, mp = 0;
+  [e.weapon, e.armor, e.accessory].forEach(item => {
+    if (!item) return;
+    atk += Number(item.atk || 0);
+    magic += Number(item.magic || 0);
+    defense += Number(item.defense || 0);
+    hp += Number(item.hp || 0);
+    mp += Number(item.mp || 0);
+  });
+  return {atk, magic, defense, hp, mp};
+}
+
+function codexEffectiveStats(characterId, baseStats) {
+  const b = baseStats || {};
+  const bonus = codexEquipmentBonus(characterId);
+  return {
+    ...b,
+    atk: Number(b.atk || b.attack || 0) + bonus.atk,
+    magic: Number(b.magic || b.mag || 0) + bonus.magic,
+    defense: Number(b.defense || b.def || b.ac || 0) + bonus.defense,
+    hp: Number(b.hp || 0) + bonus.hp,
+    mp: Number(b.mp || 0) + bonus.mp
+  };
+}
+
+function codexBattleCharacterStats(characterId, character) {
+  const base = character && character.stats ? character.stats : {};
+  return codexEffectiveStats(characterId, base);
+}
+
 // Party structure — Codex fixed roster
 // The seven original companions are always part of the party.
 // Soel is a familiar and does not consume a party slot.
@@ -3922,6 +3960,14 @@ function renderCodexInventory() {
   });
   equipped+='</div>';
 
+  const statCards=roster.map(id=>{
+    const member=(gameState.party||[]).find(p=>p.id===id);
+    const s=codexBattleCharacterStats(id,member||{});
+    return '<div class="equipped-row"><strong>'+names[id]+'</strong> — ATK '+s.atk+
+      ' · MAG '+s.magic+' · DEF '+s.defense+'</div>';
+  }).join('');
+  equipped+='<div class="inventory-section-title" style="margin-top:12px">Effective Combat Stats</div>'+statCards;
+
   let inventory='<div class="inventory-card"><div class="inventory-section-title">Inventory</div>';
   if(!items.length) {
     inventory+='<div class="inventory-empty">No unequipped equipment.</div>';
@@ -3944,7 +3990,7 @@ function codexEquipFromInventory(index, characterId) {
   if (codexEquipItem(Number(index), characterId)) {
     saveGame();
     renderCodexInventory();
-    showNotification('Equipment equipped. Combat stats will be connected in a later phase.');
+    showNotification('Equipment equipped. Combat stats are now calculated from equipped gear.');
   }
 }
 
