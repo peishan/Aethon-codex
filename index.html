@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.11)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.12)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -3490,7 +3490,8 @@ function playerAction(actionType, spellIndex) {
       const parts = spell.damage.split('d');
       const count = parseInt(parts[0], 10);
       const sides = parseInt(parts[1], 10);
-      const magMod = getModifier(san.stats.mag);
+      const effectiveSan = codexEffectiveStats('san', san.stats);
+      const magMod = getModifier(effectiveSan.magic);
       const roll = rollDie(20);
       const total = roll + magMod;
 
