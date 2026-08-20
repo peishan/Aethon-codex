@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.15.1)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.15.4)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -1000,6 +1000,20 @@ body {
 .trader-item{display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px solid rgba(212,168,67,.09);padding:8px 0}
 .trader-item-name{font-size:.9rem}
 .trader-buy{min-width:58px}
+
+.codex-trader-panel{margin-top:10px}
+.trader-gold-display{margin:0 0 10px;color:var(--parchment-dark)}
+.trader-card{border:1px solid rgba(212,168,67,.22);background:rgba(13,31,51,.55);border-radius:8px;padding:10px;margin:8px 0}
+.trader-card.locked{opacity:.62}.trader-name{color:var(--gold-light);font-family:Cinzel,serif;font-size:1.05rem}
+.trader-zone,.trader-item-meta{font-size:.78rem;color:var(--parchment-dark)}
+.trader-greeting{font-size:.84rem;color:var(--parchment-dark);margin:6px 0}
+.trader-item{display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px solid rgba(212,168,67,.09);padding:8px 0}
+.trader-buy{min-width:58px}
+
+.trader-container{display:none}
+.trader-container.active{display:block}
+.tab-content{display:none}
+.tab-content.active{display:block}
 </style>
 <!--
 AETHON CODEX ART MANIFEST
@@ -1171,6 +1185,12 @@ Add/update paths only in ART_ASSETS above.
     </div>
 
     </div>
+</div>
+<div id="traderTab" class="trader-container tab-content">
+<div class="panel-title">TRADERS</div>
+<div class="trader-gold-display">Gold: <strong id="codexTraderGold">0</strong>G</div>
+<div id="codexTraderList"></div>
+</div>
 </div>
 <div class="battle-container" id="battleTab">
       <div class="panel">
@@ -3787,38 +3807,123 @@ function startBook(bookNum) {
   saveGame();
 }
 
+
+const CODEX_TRADERS = [
+  {
+    n:'Lewis', title:'Senior Colleague', zone:'Whispering Woods', zoneLv:1,
+    icon:'🧳', greeting:'Lewis studies the equipment quietly. “You may need something better for the road.”',
+    stock:[
+      {n:'Woodsman Blade', slot:'weapon', atk:2, price:45, d:'Reliable early weapon.'},
+      {n:'Traveler Guard', slot:'armor', defense:2, price:50, d:'Light protective gear.'}
+    ]
+  },
+  {
+    n:'Ribald', title:'Arms & Adventuring Merchant', zone:'Later Town', zoneLv:10,
+    icon:'🧳', greeting:'Ribald looks over the party with a knowing smile.',
+    stock:[
+      {n:'Merchant’s Edge', slot:'weapon', atk:4, price:120, d:'A stronger alternative to early loot.'},
+      {n:'Reinforced Guard', slot:'armor', defense:4, price:130, d:'Improved protection.'}
+    ]
+  }
+];
+const CODEX_TRADER_BY_NAME = Object.fromEntries(CODEX_TRADERS.map(t=>[t.n,t]));
+
+function renderCodexTraderPanel(){
+  const panel=document.getElementById('codexTraderPanel'), list=document.getElementById('codexTraderList');
+  const gold=document.getElementById('codexTraderGold');
+  if(!panel||!list)return;
+  panel.style.display='block';
+  if(gold)gold.textContent=Number(gameState.gold||0);
+  list.innerHTML=CODEX_TRADERS.map((trader,ti)=>{
+    const unlocked=trader.n==='Lewis'||Number(gameState.level||0)>=Number(trader.zoneLv||1);
+    let s='<div class="trader-card '+(unlocked?'':'locked')+'"><div class="trader-name">'+trader.icon+' '+trader.n+'</div>';
+    s+='<div class="trader-zone">'+trader.title+' · '+trader.zone+'</div>';
+    if(!unlocked)s+='<div class="trader-item-meta">🔒 Unlocks at level '+trader.zoneLv+'</div>';
+    else{
+      s+='<div class="trader-greeting">'+trader.greeting+'</div><div class="trader-stock">';
+      trader.stock.forEach((item,ii)=>{
+        const price=item.price||0, can=Number(gameState.gold||0)>=price;
+        s+='<div class="trader-item"><div><div class="trader-item-name">✦ '+item.n+'</div><div class="trader-item-meta">'+item.d+'</div></div>';
+        s+='<button class="trader-buy" '+(can?'':'disabled')+' onclick="buyFromCodexTrader(\''+trader.n+'\','+ii+')">'+price+'G</button></div>';
+      });
+      s+='</div>';
+    }
+    return s+'</div>';
+  }).join('');
+}
+function openCodexTrader(){
+  document.querySelectorAll('.dashboard-container,.journal-container,.party-container,.equipment-container,.inventory-container,.loot-container,.battle-container').forEach(c=>c.classList.remove('active'));
+  const panel=document.getElementById('codexTraderPanel');
+  if(panel)panel.classList.add('active');
+  renderCodexTraderPanel();
+}
+function buyFromCodexTrader(traderName,itemIndex){
+  const trader=CODEX_TRADER_BY_NAME[traderName], item=trader&&trader.stock[itemIndex];
+  if(!item)return;
+  const price=Number(item.price||0);
+  if(Number(gameState.gold||0)<price){showNotification('Not enough gold.');return;}
+  const copy={...item,name:item.n,acquiredFrom:'trader',sourceTrader:traderName};
+  delete copy.n; delete copy.price;
+  codexEnsureEquipmentInventory().push(copy);
+  gameState.gold-=price;
+  saveGame(); renderCodexTraderPanel(); renderCodexInventory();
+  showNotification('Bought '+item.n+' for '+price+'G.');
+}
+
+
+function renderTrader() {
+  const list=document.getElementById('traderList');
+  const gold=document.getElementById('traderGold');
+  if(!list)return;
+  if(gold)gold.textContent=Number(gameState.gold||0);
+  const traders=Array.isArray(CODEX_TRADERS)?CODEX_TRADERS:[];
+  list.innerHTML=traders.map((trader)=>{
+    const unlocked=trader.n==='Lewis'||Number(gameState.level||0)>=Number(trader.zoneLv||1);
+    let s='<div class="trader-card '+(unlocked?'':'locked')+'">';
+    s+='<div class="trader-name">'+(trader.icon||'🧳')+' '+trader.n+'</div>';
+    s+='<div class="trader-zone">'+trader.title+' · '+trader.zone+'</div>';
+    if(!unlocked){
+      s+='<div class="trader-item-meta">🔒 Unlocks at level '+trader.zoneLv+'</div>';
+    } else {
+      s+='<div class="trader-greeting">'+trader.greeting+'</div><div class="trader-stock">';
+      (trader.stock||[]).forEach((item,ii)=>{
+        const price=Number(item.price||0);
+        const can=Number(gameState.gold||0)>=price;
+        s+='<div class="trader-item"><div><div class="trader-item-name">✦ '+item.n+'</div>';
+        s+='<div class="trader-item-meta">'+item.d+'</div></div>';
+        s+='<button class="trader-buy" '+(can?'':'disabled')+
+          ' onclick="buyFromCodexTrader(\''+trader.n+'\','+ii+')">'+price+'G</button></div>';
+      });
+      s+='</div>';
+    }
+    return s+'</div>';
+  }).join('');
+}
+
 function switchTab(tab) {
   gameState.currentTab = tab;
-
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   const nav = document.querySelector('.nav-tab[data-tab="' + tab + '"]');
   if (nav) nav.classList.add('active');
 
-  document.querySelectorAll(
-    '.dashboard-container, .journal-container, .party-container, .equipment-container, .inventory-container, .loot-container, .battle-container'
-  ).forEach(c => c.classList.remove('active'));
+  const containers = document.querySelectorAll(
+    '.dashboard-container, .journal-container, .party-container, .equipment-container, ' +
+    '.inventory-container, .loot-container, .trader-container, .battle-container'
+  );
+  containers.forEach(c => c.classList.remove('active'));
 
   const content = document.getElementById(tab + 'Tab');
-  if (content && (
-      content.classList.contains('dashboard-container') ||
-      content.classList.contains('journal-container') ||
-      content.classList.contains('party-container') ||
-      content.classList.contains('equipment-container') ||
-      content.classList.contains('inventory-container') ||
-      content.classList.contains('loot-container') ||
-      content.classList.contains('battle-container')
-  )) {
-    content.classList.add('active');
-  }
+  if (content) content.classList.add('active');
 
   if (tab === 'journal') renderJournal();
   if (tab === 'party') renderParty();
   if (tab === 'equipment') renderEquipmentFoundation();
   if (tab === 'inventory') renderCodexInventory();
   if (tab === 'loot') renderLootFoundation();
-  if (tab === 'battle') { renderEquipmentBattlePreview(); renderPhysicalEquipmentTest(); renderBattle(); }
-  if (tab === 'trader' && typeof renderTrader === 'function') renderTrader();
+  if (tab === 'trader') renderTrader();
+  if (tab === 'battle') renderBattle();
 }
+
 
 function getChapterStatus(chapterId) {
   if (gameState.completedChapters.includes(chapterId)) return 'completed';
