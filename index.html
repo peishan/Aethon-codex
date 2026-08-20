@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.6)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.6 Equip & Compare)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -953,6 +953,12 @@ body {
 .equipped-row{color:var(--parchment-dark);font-size:.9em;padding:6px 0;border-bottom:1px solid rgba(212,168,67,.1)}
 .equip-actions{margin-top:8px;display:flex;flex-wrap:wrap;gap:5px}
 .equip-btn{font-family:inherit;border:1px solid rgba(212,168,67,.35);background:rgba(21,45,70,.8);color:var(--parchment-dark);border-radius:6px;padding:6px 8px}
+
+.character-equipment-row{border-bottom:1px solid rgba(212,168,67,.12);padding:10px 0}
+.character-equipment-name{color:var(--gold-light);font-family:Cinzel,serif;font-size:1.02em;margin-bottom:6px}
+.slot-row{display:flex;justify-content:space-between;align-items:center;gap:8px;color:var(--parchment-dark);padding:3px 0}
+.stat-compare{display:flex;flex-wrap:wrap;gap:8px;margin-top:7px;color:var(--parchment-dark);font-size:.88em}
+.stat-compare strong{color:var(--gold-light)}
 </style>
 <!--
 AETHON CODEX ART MANIFEST
@@ -3950,23 +3956,32 @@ function renderCodexInventory() {
   const names={san:'San',joel:'Joel',aisyah:'Aisyah',mezstorm:'Mezstorm',eliz:'Eliz',senedra:'Senedra',zaki:'Zaki'};
 
   let equipped='<div class="inventory-card"><div class="inventory-section-title">Equipped</div>';
+
   roster.forEach(id=>{
     const e=state[id]||{};
-    equipped+='<div class="equipped-row"><strong>'+names[id]+'</strong> — '+
-      ['weapon','armor','accessory'].map(slot=>{
-        const x=e[slot];
-        return slot+': '+(x?x.name:'—');
-      }).join(' · ')+'</div>';
-  });
-  equipped+='</div>';
-
-  const statCards=roster.map(id=>{
     const member=(gameState.party||[]).find(p=>p.id===id);
-    const s=codexBattleCharacterStats(id,member||{});
-    return '<div class="equipped-row"><strong>'+names[id]+'</strong> — ATK '+s.atk+
-      ' · MAG '+s.magic+' · DEF '+s.defense+'</div>';
-  }).join('');
-  equipped+='<div class="inventory-section-title" style="margin-top:12px">Effective Combat Stats</div>'+statCards;
+    const base=member && member.stats ? member.stats : {};
+    const effective=codexBattleCharacterStats(id,member||{});
+
+    equipped+='<div class="character-equipment-row"><div class="character-equipment-name">'+names[id]+'</div>';
+
+    ['weapon','armor','accessory'].forEach(slot=>{
+      const x=e[slot];
+      equipped+='<div class="slot-row"><span>'+slot+': '+(x?x.name:'—')+'</span>';
+      if(x){
+        equipped+='<button class="equip-btn" onclick="codexUnequipFromCharacter(\''+id+'\',\''+slot+'\')">Unequip</button>';
+      }
+      equipped+='</div>';
+    });
+
+    equipped+='<div class="stat-compare">'+
+      '<span>ATK '+Number(base.atk||base.attack||0)+' → <strong>'+effective.atk+'</strong></span>'+
+      '<span>MAG '+Number(base.magic||base.mag||0)+' → <strong>'+effective.magic+'</strong></span>'+
+      '<span>DEF '+Number(base.defense||base.def||base.ac||0)+' → <strong>'+effective.defense+'</strong></span>'+
+      '</div></div>';
+  });
+
+  equipped+='</div>';
 
   let inventory='<div class="inventory-card"><div class="inventory-section-title">Inventory</div>';
   if(!items.length) {
@@ -3974,7 +3989,8 @@ function renderCodexInventory() {
   } else {
     inventory+=items.map((item,i)=>{
       const buttons=roster.filter(id=>codexCanEquip(id,item)).map(id=>
-        '<button class="equip-btn" data-index="'+i+'" data-character="'+id+'" onclick="codexEquipFromInventory(Number(this.dataset.index), this.dataset.character)">Equip to '+names[id]+'</button>'
+        '<button class="equip-btn" data-index="'+i+'" data-character="'+id+
+        '" onclick="codexEquipFromInventory(Number(this.dataset.index), this.dataset.character)">Equip to '+names[id]+'</button>'
       ).join(' ');
       return '<div class="inventory-item"><div class="inventory-item-name">'+item.name+
         '</div><div class="inventory-item-meta">'+item.slot+' · '+(item.acquiredFrom||'unknown source')+
