@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.13.5)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.13.7)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -971,6 +971,11 @@ body {
 .combat-log-panel .panel-title{font-family:Cinzel,serif;color:var(--gold-light);font-size:1rem;margin-bottom:6px}
 #visibleCombatLog{max-height:150px;overflow-y:auto;font-size:.86rem;line-height:1.4;color:var(--parchment-dark)}
 .combat-log-line{padding:4px 0;border-bottom:1px solid rgba(212,168,67,.08)}
+
+.combat-log-panel{margin:8px 0 12px;padding:10px;border:1px solid rgba(212,168,67,.35);background:rgba(8,18,30,.96);border-radius:8px}
+.combat-log-panel .panel-title{font-family:Cinzel,serif;color:var(--gold-light);font-size:1rem;margin-bottom:6px}
+#combatLog,#visibleCombatLog{max-height:150px;overflow-y:auto;font-size:.86rem;line-height:1.4;color:var(--parchment-dark)}
+.combat-log-entry,.combat-log-line{padding:4px 0;border-bottom:1px solid rgba(212,168,67,.08)}
 </style>
 <!--
 AETHON CODEX ART MANIFEST
@@ -1154,13 +1159,7 @@ Add/update paths only in ART_ASSETS above.
       </div>
     </div>
 </div>
-
-    <div class="combat-log-panel" id="visibleCombatLogPanel">
-      <div class="panel-title">Combat Log</div>
-      <div id="visibleCombatLog">Battle messages will appear here.</div>
-    </div>
-
-    <div class="battle-container" id="battleTab">
+<div class="battle-container" id="battleTab">
       <div class="panel">
         <div class="panel-title">Battle Arena</div>
         <div id="battleContent">
@@ -2994,17 +2993,19 @@ function showDice(roll, modifier, total, label, callback) {
   }, 1000);
 }
 
-function addCombatLog(text, type) {
-  if (!gameState.battleState) return;
-  if (!Array.isArray(gameState.battleState.combatLog)) {
-    gameState.battleState.combatLog = [];
-  }
-  gameState.battleState.combatLog.push({text: text, type: type || 'info'});
-  if (gameState.battleState.combatLog.length > 30) {
-    gameState.battleState.combatLog.shift();
-  }
-  renderVisibleCombatLog();
+function addCombatLog(message, type) {
+  const battle = gameState.battleState;
+  if (!battle) return;
+
+  if (!Array.isArray(battle.log)) battle.log = [];
+  battle.log.push({message: String(message), type: type || 'info'});
+  if (battle.log.length > 30) battle.log.shift();
+
+  // Keep the existing Battle Arena renderer authoritative.
+  renderBattle();
 }
+
+
 
 
 function showDamagePopup(element, amount, type) {
@@ -3606,19 +3607,22 @@ function runPlayerAttackIntegrationTest() {
 
 
 function renderVisibleCombatLog() {
-  const visible=document.getElementById('visibleCombatLog');
-  const log=document.getElementById('combatLog');
-  if(!visible)return;
-  const entries=log ? Array.from(log.querySelectorAll('.combat-log-entry')).slice(-8) : [];
-  visible.innerHTML=entries.length
-    ? entries.map(entry =>
+  const visible = document.getElementById('visibleCombatLog');
+  if (!visible) return;
+
+  const battle = gameState.battleState;
+  const lines = battle && Array.isArray(battle.log) ? battle.log.slice(-8) : [];
+
+  visible.innerHTML = lines.length
+    ? lines.map(entry =>
         '<div class="combat-log-line">' +
-        String(entry.textContent || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') +
+        String(entry.message || entry.text || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') +
         '</div>'
       ).join('')
     : 'Battle messages will appear here.';
-  visible.scrollTop=visible.scrollHeight;
+  visible.scrollTop = visible.scrollHeight;
 }
+
 
 function renderBattle() {
   renderVisibleCombatLog();
