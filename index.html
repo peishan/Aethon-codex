@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v11.7 Safe)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v11.7 Safe 2)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -3628,20 +3628,23 @@ function switchTab(tab) {
   if (nav) nav.classList.add('active');
 
   document.querySelectorAll(
-    '.dashboard-container, .journal-container, .party-container, .battle-container'
+    '.dashboard-container, .journal-container, .party-container, .trader-container, .battle-container'
   ).forEach(c => c.classList.remove('active'));
 
   const content = document.getElementById(tab + 'Tab');
-  if (content && content.classList.contains('dashboard-container') ||
-      content && content.classList.contains('journal-container') ||
-      content && content.classList.contains('party-container') ||
-      content && content.classList.contains('battle-container')) {
+  if (content && (
+      content.classList.contains('dashboard-container') ||
+      content.classList.contains('journal-container') ||
+      content.classList.contains('party-container') ||
+      content.classList.contains('trader-container') ||
+      content.classList.contains('battle-container')
+  )) {
     content.classList.add('active');
   }
 
   if (tab === 'journal') renderJournal();
   if (tab === 'party') renderParty();
-  if (tab === 'trader') { /* Phase 1: static panel only */ }
+  if (tab === 'trader') aethonRenderTraderCatalogue();
   if (tab === 'battle') renderBattle();
 }
 
@@ -4170,12 +4173,6 @@ document.getElementById('questModal').addEventListener('click', (e) => {
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
-});
-</script>
-<script>
-document.addEventListener('DOMContentLoaded',()=>{
-  const b=document.querySelector('[data-tab="trader"]');
-  if(b) b.addEventListener('click',()=>setTimeout(aethonRenderTraderCatalogue,0));
 });
 </script>
 </body>
