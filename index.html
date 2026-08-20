@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.4 Final)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.5)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -947,6 +947,12 @@ body {
 .inventory-item{border:1px solid rgba(212,168,67,.22);background:rgba(13,31,51,.65);border-radius:8px;padding:11px;margin:8px 0}
 .inventory-item-name{color:var(--gold-light);font-family:Cinzel,serif}
 .inventory-item-meta{color:var(--parchment-dark);font-size:.88em;margin-top:4px}
+
+.inventory-card{border:1px solid rgba(212,168,67,.22);background:rgba(13,31,51,.5);border-radius:8px;padding:12px;margin:10px 0}
+.inventory-section-title{color:var(--gold-light);font-family:Cinzel,serif;font-size:1.05em;margin-bottom:8px}
+.equipped-row{color:var(--parchment-dark);font-size:.9em;padding:6px 0;border-bottom:1px solid rgba(212,168,67,.1)}
+.equip-actions{margin-top:8px;display:flex;flex-wrap:wrap;gap:5px}
+.equip-btn{font-family:inherit;border:1px solid rgba(212,168,67,.35);background:rgba(21,45,70,.8);color:var(--parchment-dark);border-radius:6px;padding:6px 8px}
 </style>
 <!--
 AETHON CODEX ART MANIFEST
@@ -2433,6 +2439,56 @@ function codexAwardTestBossReward() {
   return [];
 }
 
+
+/* ============================================================
+   CODEX EQUIP / UNEQUIP — v12.5
+   Phase 4: inventory items can be equipped to compatible party members.
+   Combat stat integration is intentionally deferred.
+   ============================================================ */
+function codexEnsureEquipmentState() {
+  if (!gameState.codexEquipment) gameState.codexEquipment = {};
+  const core = ['san','joel','aisyah','mezstorm','eliz','senedra','zaki'];
+  core.forEach(id => {
+    if (!gameState.codexEquipment[id]) {
+      gameState.codexEquipment[id] = { weapon:null, armor:null, accessory:null };
+    }
+  });
+  return gameState.codexEquipment;
+}
+
+function codexEquipItem(inventoryIndex, characterId) {
+  const inv = codexInventoryItems();
+  const item = inv[inventoryIndex];
+  if (!item || !codexCanEquip(characterId, item)) return false;
+
+  const state = codexEnsureEquipmentState();
+  const slot = item.slot;
+  if (!state[characterId]) return false;
+
+  // If another item occupies the slot, return it to inventory.
+  const old = state[characterId][slot];
+  if (old) inv.push({...old});
+
+  state[characterId][slot] = {...item};
+  inv.splice(inventoryIndex, 1);
+  return true;
+}
+
+function codexUnequipItem(characterId, slot) {
+  const state = codexEnsureEquipmentState();
+  const current = state[characterId] && state[characterId][slot];
+  if (!current) return false;
+
+  codexInventoryItems().push({...current});
+  state[characterId][slot] = null;
+  return true;
+}
+
+function codexEquippedFor(characterId) {
+  const state = codexEnsureEquipmentState();
+  return state[characterId] || {weapon:null,armor:null,accessory:null};
+}
+
 // Party structure — Codex fixed roster
 // The seven original companions are always part of the party.
 // Soel is a familiar and does not consume a party slot.
@@ -3850,18 +3906,56 @@ function renderCodexInventory() {
   const el=document.getElementById('codexInventoryList');
   if(!el)return;
   const items=codexInventoryItems();
-  if(!items.length){
-    el.innerHTML='<div class="inventory-empty">No equipment has been acquired yet.</div>';
-    return;
+  const state=codexEnsureEquipmentState();
+
+  const roster=['san','joel','aisyah','mezstorm','eliz','senedra','zaki'];
+  const names={san:'San',joel:'Joel',aisyah:'Aisyah',mezstorm:'Mezstorm',eliz:'Eliz',senedra:'Senedra',zaki:'Zaki'};
+
+  let equipped='<div class="inventory-card"><div class="inventory-section-title">Equipped</div>';
+  roster.forEach(id=>{
+    const e=state[id]||{};
+    equipped+='<div class="equipped-row"><strong>'+names[id]+'</strong> — '+
+      ['weapon','armor','accessory'].map(slot=>{
+        const x=e[slot];
+        return slot+': '+(x?x.name:'—');
+      }).join(' · ')+'</div>';
+  });
+  equipped+='</div>';
+
+  let inventory='<div class="inventory-card"><div class="inventory-section-title">Inventory</div>';
+  if(!items.length) {
+    inventory+='<div class="inventory-empty">No unequipped equipment.</div>';
+  } else {
+    inventory+=items.map((item,i)=>{
+      const buttons=roster.filter(id=>codexCanEquip(id,item)).map(id=>
+        '<button class="equip-btn" data-index="'+i+'" data-character="'+id+'" onclick="codexEquipFromInventory(Number(this.dataset.index), this.dataset.character)">Equip to '+names[id]+'</button>'
+      ).join(' ');
+      return '<div class="inventory-item"><div class="inventory-item-name">'+item.name+
+        '</div><div class="inventory-item-meta">'+item.slot+' · '+(item.acquiredFrom||'unknown source')+
+        '</div><div class="equip-actions">'+buttons+'</div></div>';
+    }).join('');
   }
-  el.innerHTML=items.map(item =>
-    '<div class="inventory-item"><div class="inventory-item-name">'+
-    item.name+'</div><div class="inventory-item-meta">'+
-    item.slot+' · '+(item.acquiredFrom||'unknown source')+
-    
-    '</div></div>'
-  ).join('');
+  inventory+='</div>';
+
+  el.innerHTML=equipped+inventory;
 }
+
+function codexEquipFromInventory(index, characterId) {
+  if (codexEquipItem(Number(index), characterId)) {
+    saveGame();
+    renderCodexInventory();
+    showNotification('Equipment equipped. Combat stats will be connected in a later phase.');
+  }
+}
+
+function codexUnequipFromCharacter(characterId, slot) {
+  if (codexUnequipItem(characterId, slot)) {
+    saveGame();
+    renderCodexInventory();
+    showNotification('Equipment returned to inventory.');
+  }
+}
+
 
 function renderLootFoundation(){
   const el=document.getElementById('lootRoster');
