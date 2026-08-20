@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v11.5)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v11.6)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -2776,6 +2776,8 @@ function initBattle(chapterId) {
     round: 1,
     log: [],
     active: true,
+    waitingForPlayer: false,
+    narrative: 'The battle begins...',
     winner: null
   };
 
@@ -2835,22 +2837,22 @@ function updateBossPhase() {
 }
 
 function aiAction(member) {
-  const narrativeByRole = {
-    senedra: current.name + ' releases a rapid volley of arrows!',
-    joel: current.name + ' charges forward, shield raised — Shield Wall!',
-    aisyah: current.name + ' darts forward with both blades ready!',
-    mezstorm: current.name + ' gathers arcane energy!',
-    eliz: current.name + ' raises her healing power!',
-    zaki: current.name + ' surges forward with his weapon!'
-  };
-  battle.narrative = narrativeByRole[current.id] || current.name + ' prepares to act...';
-
   const battle = gameState.battleState;
+  if (!battle || !battle.active || !member) return;
   const boss = battle.boss;
+
+  const narrativeByRole = {
+    senedra: member.name + ' releases a rapid volley of arrows!',
+    joel: member.name + ' charges forward, shield raised — Shield Wall!',
+    aisyah: member.name + ' darts forward with both blades ready!',
+    mezstorm: member.name + ' gathers arcane energy!',
+    eliz: member.name + ' raises her healing power!',
+    zaki: member.name + ' surges forward with his weapon!'
+  };
+  battle.narrative = narrativeByRole[member.id] || member.name + ' prepares to act...';
 
   // AI logic based on role
   if (member.role === 'Healer') {
-    // Find lowest HP ally
     const allies = getActiveParty().sort((a, b) => a.currentHP / a.stats.maxHP - b.currentHP / b.stats.maxHP);
     const lowest = allies[0];
     if (lowest && lowest.currentHP / lowest.stats.maxHP < 0.5 && member.currentMP >= 10) {
@@ -2860,7 +2862,6 @@ function aiAction(member) {
       addCombatLog(member.name + ' casts Heal on ' + lowest.name + ' for ' + healAmount + ' HP!', 'heal');
       return;
     }
-    // Check for dead ally and resurrect
     const dead = gameState.party.find(p => p.currentHP === 0 && p.active);
     if (dead && member.currentMP >= 40) {
       spendMP(member.id, 40);
@@ -2871,7 +2872,6 @@ function aiAction(member) {
   }
 
   if (member.role === 'Paladin') {
-    // Tank logic - protect lowest HP ally
     const allies = getActiveParty().sort((a, b) => a.currentHP / a.stats.maxHP - b.currentHP / b.stats.maxHP);
     const lowest = allies[0];
     if (lowest && lowest.currentHP / lowest.stats.maxHP < 0.4 && member.currentMP >= 20) {
@@ -2881,18 +2881,17 @@ function aiAction(member) {
     }
   }
 
-  // Default: attack
   const atkMod = getModifier(member.stats.atk);
   const roll = rollDie(20);
   const total = roll + atkMod;
 
   if (roll === 20) {
     const dmg = rollDice(2, 6) * 2;
-    battle.boss.hp = Math.max(battle.boss.hp - dmg, 0);
+    boss.hp = Math.max(boss.hp - dmg, 0);
     addCombatLog('CRITICAL! ' + member.name + ' deals ' + dmg + ' damage to ' + boss.name + '!', 'crit');
   } else if (total >= boss.ac) {
     const dmg = rollDice(2, 6) + atkMod;
-    battle.boss.hp = Math.max(battle.boss.hp - dmg, 0);
+    boss.hp = Math.max(boss.hp - dmg, 0);
     addCombatLog(member.name + ' hits ' + boss.name + ' for ' + dmg + ' damage!', 'damage');
   } else {
     addCombatLog(member.name + ' misses ' + boss.name + '!', 'info');
@@ -2972,15 +2971,14 @@ function nextTurn() {
   const battle = gameState.battleState;
   if (!battle || !battle.active) return;
 
+  // Advance exactly once to the next living actor.
   advanceBattleTurn();
   if (!battle.active) return;
 
   const current = getCurrentBattleMember();
   if (!current) return;
 
-  // CRITICAL: stop the turn engine here. San's turn is a real pause.
-  // No timeout, enemy action, or automatic follow-up may run until the
-  // player explicitly chooses an action.
+  // San's turn is a hard pause. Nothing happens until the player chooses.
   if (current.id === 'san') {
     gameState.battleInputLocked = false;
     battle.waitingForPlayer = true;
@@ -2998,6 +2996,7 @@ function nextTurn() {
     if (!battle.active) return;
 
     aiAction(current);
+
     if (battle.boss.hp <= 0) {
       battle.boss.hp = 0;
       battle.active = false;
@@ -3008,6 +3007,7 @@ function nextTurn() {
       renderBattle();
       return;
     }
+
     if (!battle.active) {
       renderBattle();
       return;
@@ -3015,23 +3015,7 @@ function nextTurn() {
 
     renderBattle();
 
-    // Continue until the next living member, but if that member is San,
-    // nextTurn() stops and waits for player input.
-    advanceBattleTurn();
-    if (!battle.active) return;
-
-    const next = getCurrentBattleMember();
-    if (!next) return;
-
-    if (next.id === 'san') {
-      gameState.battleInputLocked = false;
-      battle.waitingForPlayer = true;
-      battle.narrative = 'San watches the battlefield. What will she do?';
-      renderBattle();
-      return;
-    }
-
-    // Continue automatic allied/boss turns through nextTurn().
+    // The next call advances once. If it reaches San, it stops there.
     gameState.battleInputLocked = false;
     nextTurn();
   }, 650);
@@ -3050,8 +3034,6 @@ function playerAction(actionType, spellIndex) {
   gameState.battleInputLocked = true;
 
   const finishPlayerAction = () => {
-    // Resolve victory immediately. A defeated boss must never receive another
-    // turn and the battle must enter the existing victory/Complete Quest UI.
     if (battle.boss.hp <= 0) {
       battle.boss.hp = 0;
       battle.active = false;
@@ -3064,32 +3046,21 @@ function playerAction(actionType, spellIndex) {
     }
 
     renderBattle();
-    if (!battle.active) {
-      gameState.battleInputLocked = false;
-      return;
-    }
 
     setTimeout(() => {
       if (!battle.active) return;
+
       bossAction();
 
-      // Boss actions can also end the battle.
-      if (battle.boss.hp <= 0) {
-        battle.boss.hp = 0;
-        battle.active = false;
-        battle.winner = 'party';
-        battle.waitingForPlayer = false;
+      if (!battle.active) {
         gameState.battleInputLocked = false;
-        addCombatLog('=== ' + battle.boss.name + ' has been defeated! ===', 'crit');
         renderBattle();
         return;
       }
 
       renderBattle();
-      if (battle.active) {
-        advanceBattleTurn();
-        nextTurn();
-      }
+      gameState.battleInputLocked = false;
+      nextTurn();
     }, 800);
   };
 
