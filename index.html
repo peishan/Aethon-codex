@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v11.7 Safe 2)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.0)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -930,6 +930,11 @@ body {
   min-height: 20px;
 }
 
+
+.equipment-container{display:none;animation:fadeIn .35s ease}.equipment-container.active{display:block}
+.equipment-note{color:var(--parchment-dark);font-style:italic;margin:8px 0 16px}
+.equipment-card{border:1px solid rgba(212,168,67,.22);background:rgba(13,31,51,.65);border-radius:8px;padding:12px;margin:8px 0}
+.equipment-name{color:var(--gold-light);font-family:Cinzel,serif}.equipment-slots{color:var(--parchment-dark);font-size:.88em;margin-top:5px}
 </style>
 <!--
 AETHON CODEX ART MANIFEST
@@ -999,6 +1004,7 @@ Add/update paths only in ART_ASSETS above.
       <button class="nav-tab active" data-tab="dashboard" onclick="switchTab('dashboard')">Dashboard</button>
       <button class="nav-tab" data-tab="journal" onclick="switchTab('journal')">Journal</button>
       <button class="nav-tab" data-tab="party" onclick="switchTab('party')">Party</button>
+      <button class="nav-tab" data-tab="equipment" onclick="switchTab('equipment')">Equipment</button>
       <button class="nav-tab" data-tab="trader" onclick="switchTab('trader')">Trader</button>
       <button class="nav-tab" data-tab="battle" onclick="switchTab('battle')" id="battleNavTab">Battle</button>
     </nav>
@@ -1056,6 +1062,14 @@ Add/update paths only in ART_ASSETS above.
       </div>
     </div>
 
+    <div class="equipment-container" id="equipmentTab">
+      <div class="panel">
+        <div class="panel-title">Equipment</div>
+        <div class="equipment-note">Equipment foundation ready. Loot and equipping will be added in later phases.</div>
+        <div id="equipmentRoster"></div>
+      </div>
+    </div>
+
     <div class="battle-container" id="battleTab">
       <div class="panel">
         <div class="panel-title">Battle Arena</div>
@@ -1091,330 +1105,6 @@ Add/update paths only in ART_ASSETS above.
 </div>
 
 <script>
-/* v11.7 SAFE — isolated trader catalogue. No game state is touched. */
-const AETHON_TRADER_CATALOG = [
-{ n: 'Lewis', t: 'trader', title: 'Wandering Merchant', icon: '🧳', col: '#fbbf24', zone: 'Whispering Woods', zoneLv: 1,
-      d: "San's desk was two rows from his, back at the insurance office — the one colleague who always had something to sell out of a drawer, Tupperware one month, phone cases the next, whatever side hustle was currently paying better than the day job. Out here the inventory changed. The instinct never did.",
-      greeting: "Ah, San? You're back again? These woods'll wear a lesser adventurer down to nothing — good thing you're not one of them.",
-      stock: [
-        { n: 'Mystic Herb', t: 'mat', q: 1, r: 'uncommon', price: 15 },
-        { n: 'Silver Thread', t: 'mat', q: 1, r: 'rare', price: 30 },
-        { n: 'Luck Charm', slot: 'amulet', q: 1, r: 'uncommon', price: 50, cha: 2 }
-      ],
-      unlocked: true, zone: 'Whispering Woods', zoneLv: 1, visitCount: 0 },
-{ n: 'Ribald', t: 'trader', title: 'Adventurers Mart', icon: '', col: '#dc2626', zone: 'Cursed Catacombs', zoneLv: 2,
-      d: 'A grizzled merchant who sets up shop in the darkest corners. His wares have seen blood.',
-      stock: [
-        { n: 'Flaming Longsword', slot: 'weapon', q: 1, r: 'rare', price: 120, atk: 8, fireDmg: 4 },
-        { n: 'Cloak of Protection', slot: 'armor', q: 1, r: 'rare', price: 150, def: 4, wis: 2 },
-        { n: 'Ring of Wizardry', slot: 'ring', q: 1, r: 'epic', price: 300, int: 4, mpRegen: 3 },
-        { n: 'Rod of Resurrection', t: 'revive', q: 1, r: 'epic', price: 250, eff: 'revive', v: 75, d: 'A gleaming rod that channels divine energy to restore life. Revives fallen ally with 75% HP.' },
-        { n: "Joel's Bulwark", slot: 'weapon', forCompanion: 'Joel', q: 1, r: 'rare', price: 80, atk: 0, def: 3, hp: 20, d: 'A heavy shield forged for The Steadfast. +3 DEF, +20 HP' },
-        { n: "Aisyah's Twin Blades", slot: 'weapon', forCompanion: 'Aisyah', q: 1, r: 'rare', price: 80, atk: 3, def: 0, spd: 2, d: 'Matched daggers that sing in the dark. +3 ATK, +2 SPD' }
-      ],
-      unlocked: false, visitCount: 0 },
-{ n: 'Larloch', t: 'trader', title: 'Vecna Artifacts', icon: '', col: '#7c2d12', zone: 'Abyssal Depths', zoneLv: 8,
-      d: 'A skeletal figure wrapped in tattered robes. His wares whisper secrets that should stay buried.',
-      stock: [
-        { n: 'Robe of Vecna', slot: 'armor', q: 1, r: 'legendary', price: 800, def: 8, int: 5, voidDmg: 5 },
-        { n: 'Vecnas Hand', slot: 'amulet', q: 1, r: 'epic', price: 500, str: 3, lifeSteal: 0.15 },
-        { n: 'Eye of Vecna', slot: 'amulet', q: 1, r: 'epic', price: 500, wis: 4, voidRes: 0.25 },
-        { n: "Soel's Spirit Bell", slot: 'weapon', forCompanion: 'Soel', q: 1, r: 'epic', price: 100, atk: 1, def: 1, spd: 2, d: 'A tiny bell only Soel can hear. +1 ATK, +1 DEF, +2 SPD, amplifies fortune' }
-      ],
-      unlocked: false, visitCount: 0 },
-{ n: 'Deidre', t: 'trader', title: 'Exotic Wares', icon: '', col: '#0891b2', zone: 'Frostspire Ruins', zoneLv: 6,
-      d: 'A frost-touched merchant with an eye for the extraordinary. Her breath does not fog in the cold.',
-      stock: [
-        { n: 'Frostbrand', slot: 'weapon', q: 1, r: 'rare', price: 200, atk: 10, iceDmg: 5 },
-        { n: 'Icingdeath Scimitar', slot: 'weapon', q: 1, r: 'epic', price: 350, atk: 12, dex: 3, iceDmg: 4 },
-        { n: 'Belt of Hill Giant Strength', slot: 'amulet', q: 1, r: 'rare', price: 250, str: 4, con: 2 },
-        { n: "Eliz's Serenity Orb", slot: 'amulet', forCompanion: 'Eliz', q: 1, r: 'epic', price: 120, atk: 0, def: 2, hp: 15, d: 'A glowing orb that soothes the wounded. +2 DEF, +15 HP, enhances healing' },
-        { n: "Zaki's Temper Band", slot: 'ring', forCompanion: 'Zaki', q: 1, r: 'rare', price: 75, atk: 3, def: 1, spd: 0, d: 'A red armband that fuels rage. +3 ATK, +1 DEF' }
-      ],
-      unlocked: false, visitCount: 0 },
-{ n: 'Vessa', t: 'trader', title: 'The Hoardkeeper', icon: '💎', col: '#f5d76e', zone: "The Architect's Chamber", zoneLv: 43,
-      d: "She deals in nothing less than legendary. Where the gold comes from, she never says — only that a hoard this size doesn't build itself from common finds.",
-      stock: [
-        { n: 'The Last Word', slot: 'weapon', q: 1, r: 'legendary', price: 4500, atk: 20, int: 6, d: 'A staff carved from something that used to argue back.' },
-        { n: "Vessa's Ward", slot: 'armor', q: 1, r: 'legendary', price: 4200, def: 18, wis: 5, d: 'Armor that has never once failed to earn its price back.' },
-        { n: 'Crown of the Hoardkeeper', slot: 'head', q: 1, r: 'legendary', price: 3800, def: 10, int: 4, atk: 4, d: 'Every gem in it was once someone else\'s prized possession.' },
-        { n: 'Gauntlets of the Unshaken', slot: 'hands', q: 1, r: 'legendary', price: 3600, atk: 10, def: 6, d: 'Hands that have counted more gold than most kingdoms hold.' },
-        { n: 'Striders of the Last Mile', slot: 'feet', q: 1, r: 'legendary', price: 3600, spd: 10, def: 4, d: 'Boots for a road that never quite ends, worn by someone who never quite stops.' },
-        { n: "The Hoarder's Signet", slot: 'ring', q: 1, r: 'legendary', price: 3400, atk: 8, def: 8, goldFind: 0.15, d: 'Wearing it feels like the gold is somehow listening.' },
-        { n: 'Heart of the Hoard', slot: 'amulet', q: 1, r: 'legendary', price: 4800, atk: 8, def: 8, int: 4, wis: 4, d: 'At the center of every great hoard, there is one piece that isn\'t for sale. This is someone else\'s.' },
-        { n: "Joel's Aegis Eternal", slot: 'weapon', forCompanion: 'Joel', q: 1, r: 'legendary', price: 3200, atk: 8, def: 16, hp: 40, d: 'A shield that has never once let something through. +8 ATK, +16 DEF, +40 HP' },
-        { n: "Aisyah's Final Ledger", slot: 'weapon', forCompanion: 'Aisyah', q: 1, r: 'legendary', price: 3200, atk: 18, spd: 10, d: 'Blades sharp enough to close any account. +18 ATK, +10 SPD' }
-      ],
-      unlocked: false, visitCount: 0 },
-{ n: 'Nym', t: 'trader', title: 'Targos Quartermaster', icon: '', col: '#16a34a', zone: 'Stormhold', zoneLv: 5,
-      d: 'A gnomish quartermaster with a nose for quality gear. His prices are fair — his jokes are not.',
-      stock: [
-        { n: 'Gnome Hooked Hammer', slot: 'weapon', q: 1, r: 'uncommon', price: 80, atk: 6, str: 1 },
-        { n: 'Leather Armor +1', slot: 'armor', q: 1, r: 'uncommon', price: 90, def: 4, dex: 1 },
-        { n: 'Gnomish Goggles', slot: 'head', q: 1, r: 'rare', price: 120, int: 2, critChance: 0.05 },
-        { n: "Mezstorm's Conduit", slot: 'amulet', forCompanion: 'Mezstorm', q: 1, r: 'rare', price: 90, atk: 2, def: 0, hp: 15, d: 'A crystal that channels storm energy. +2 ATK, +15 HP' },
-        { n: "Senedra's Hawkeye Lens", slot: 'ring', forCompanion: 'Senedra', q: 1, r: 'rare', price: 85, atk: 2, def: 0, spd: 2, d: 'A spyglass that sees weakness. +2 ATK, +2 SPD' }
-      ],
-      unlocked: false, visitCount: 0 },
-{ n: 'Jonathan', t: 'trader', title: 'The Gearsmith', icon: '⚙️', col: '#f97316', zone: 'Ember Peak', zoneLv: 4,
-      d: "Same department as San, Lewis, Mimi, and Aisy, back at the insurance office — though back there he was better known for chasing whatever car mod or trend was popular that month than for fixing anything on command. He never touched a wrench professionally in his life before all this. Out here, with different parts to work with and nobody left to tell him it wasn't his job, that same restless curiosity just turned into an actual trade.",
-      greeting: "San, back again already? Bring me anything interesting this time, or just here to poke at my gears?",
-      stock: [
-        { n: 'Gear Assembly', t: 'mat', q: 1, r: 'uncommon', price: 20 },
-        { n: 'Reinforced Plate', t: 'mat', q: 1, r: 'rare', price: 35 },
-        { n: 'Tinker Wrench', slot: 'weapon', q: 1, r: 'uncommon', price: 45, atk: 4 }
-      ],
-      unlocked: false, zone: 'Ember Peak', zoneLv: 4, visitCount: 0 },
-{ n: 'Jorvin', t: 'trader', title: 'The Mechanic', icon: '🔧', col: '#e11d48', zone: 'The Static Fields', zoneLv: 41,
-      d: "San's old workmate, before all this — back-office sat directly across from her admin desk, close enough that they were basically doing the same data-entry job with two different department names on the door. Out here, that same obsessive love for how things work is the only reason the phone stood a chance at all.",
-      greeting: "Back again? Good — hand me whatever's broken, I could use the excuse to stop pretending I understand this world's wiring.",
-      stock: [
-        { n: "Overclocked Amulet", slot: 'amulet', q: 1, r: 'rare', price: 180, spd: 5, atk: 2, d: 'He swears it used to belong to a car stereo. It works better as jewelry.' },
-        { n: 'Pit Crew Gloves', slot: 'hands', q: 1, r: 'rare', price: 160, atk: 4, spd: 3, d: 'Built for changing a tire in under ten seconds. Repurposed for considerably higher stakes.' },
-        { n: "Redline Boots", slot: 'feet', q: 1, r: 'epic', price: 320, spd: 8, dex: 2, d: "He says top speed is a state of mind. The boots help." },
-        { n: 'Torque Wrench Blade', slot: 'weapon', q: 1, r: 'epic', price: 380, atk: 16, spd: 3, d: 'Not designed as a weapon. Works fine as one anyway.' },
-        { n: "Spare Battery Cell", t: 'mat', q: 1, r: 'rare', price: 60, d: "He has three of these left in the world. He is not selling all of them. Just this one." }
-      ],
-      unlocked: false, zone: 'The Static Fields', zoneLv: 41, visitCount: 0 },
-{ n: 'Dudin', t: 'trader', title: "Joel's Old Bunkmate", icon: '🎖️', col: '#4d7c0f', zone: 'The Static Fields', zoneLv: 41,
-      d: "One of Joel's dorm-mates from the old world, sharp and steady in the way people get when they've spent years making sure everyone else eats first. His supplies hit harder than Amad's — field rations built for people who might not get a second chance to eat that day.",
-      stock: [
-        { n: 'Field Ration Pack', t: 'food', eff: 'heal', v: 60, q: 1, r: 'uncommon', price: 30, d: 'Dense, plain, and built to actually keep you standing. Restores 60 HP.' },
-        { n: 'Combat Med-Kit', t: 'food', eff: 'heal', v: 85, q: 1, r: 'rare', price: 48, d: "Dudin doesn't hand these out to just anyone. Restores 85 HP." },
-        { n: 'Standard-Issue Canteen', t: 'drink', eff: 'mana', v: 45, q: 1, r: 'uncommon', price: 26, d: 'Tastes like nothing. Works like everything. Restores 45 MP.' },
-        { n: "Reserve Officer's Flask", t: 'drink', eff: 'mana', v: 65, q: 1, r: 'rare', price: 42, d: 'Saved for the people who actually needed it. Restores 65 MP.' },
-        { n: 'Elixir of Swift Growth: Full Set', t: 'bundle', bundleContents: ELIXIR_BUNDLE_ITEMS, q: 1, r: 'legendary', price: 10500, d: "Not his usual line of work, but he got his hands on a full case and figures somebody should get use out of it. One of each bottle, no Temple standing required." }
-      ],
-      unlocked: false, zone: 'The Static Fields', zoneLv: 41, visitCount: 0 },
-{ n: 'Wahyu', t: 'trader', title: 'The Printmaker', icon: '👕', col: '#0e7490', zone: 'The Static Fields', zoneLv: 41,
-      d: "Joel's other dorm-mate — used to run a little side business printing custom tees back in the old world. Here, that same eye for making something one-of-a-kind shows up as armor built with extra room worked into the seams. He calls them customs. You call them a very good reason to keep a spare rune around.",
-      stock: [
-        { n: 'Custom-Fit Vest', slot: 'armor', q: 1, r: 'rare', price: 200, def: 10, con: 2, sockets: [null, null, null, null], d: 'Four sockets stitched in on purpose, not earned through grinding. Wahyu\'s whole pitch in one sentence.' },
-        { n: 'Print Run Bracer', slot: 'hands', q: 1, r: 'rare', price: 170, atk: 5, def: 3, sockets: [null, null, null], d: 'Limited edition, he says. There were exactly two. You have one of them.' },
-        { n: "One-of-One Pendant", slot: 'amulet', q: 1, r: 'epic', price: 340, int: 4, wis: 4, sockets: [null, null, null, null], d: "He won't make another one like it. That's kind of the whole point of a custom." }
-      ],
-      unlocked: false, zone: 'The Static Fields', zoneLv: 41, visitCount: 0 },
-{ n: 'Farrow', t: 'trader', title: 'The Reclaimer', icon: '🔨', col: '#78716c', zone: 'The Static Fields', zoneLv: 26,
-      d: "A quiet scavenger who rebuilds gear from whatever the road leaves behind. She doesn't ask where your old equipment went. She just has a full rack ready for the whole party — head to toe, epic quality.",
-      stock: [
-        { n: 'Bulwark of the Steadfast', slot: 'weapon', forCompanion: 'Joel', q: 1, r: 'epic', price: 480, ilvl: 14, atk: 10, def: 22, d: 'Shield for Joel. +10 ATK, +22 DEF' },
-        { n: "Steadfast's Bulwark", slot: 'armor', forCompanion: 'Joel', q: 1, r: 'epic', price: 450, ilvl: 14, def: 22, d: 'Heavy Armor for Joel. +22 DEF' },
-        { n: 'Crown of the Faithful', slot: 'head', forCompanion: 'Joel', q: 1, r: 'epic', price: 380, ilvl: 28, def: 18, atk: 8, d: 'Head gear for Joel. +18 DEF, +8 ATK' },
-        { n: 'Gauntlets of the Chosen', slot: 'hands', forCompanion: 'Joel', q: 1, r: 'epic', price: 380, ilvl: 28, atk: 12, def: 6, d: 'Hand gear for Joel. +12 ATK, +6 DEF' },
-        { n: 'Windrunner Greaves', slot: 'feet', forCompanion: 'Joel', q: 1, r: 'epic', price: 380, ilvl: 28, spd: 12, def: 6, d: 'Feet gear for Joel. +12 SPD, +6 DEF' },
-        { n: 'Band of Unbroken Bonds', slot: 'ring', forCompanion: 'Joel', q: 1, r: 'epic', price: 380, ilvl: 28, atk: 10, def: 6, d: 'Ring for Joel. +10 ATK, +6 DEF' },
-        { n: 'Heartward Talisman', slot: 'amulet', forCompanion: 'Joel', q: 1, r: 'epic', price: 400, ilvl: 28, def: 12, atk: 10, d: 'Amulet for Joel. +12 DEF, +10 ATK' },
-
-        { n: "Sisterblade's Edge", slot: 'weapon', forCompanion: 'Aisyah', q: 1, r: 'epic', price: 480, ilvl: 14, atk: 22, spd: 12, d: 'Dagger for Aisyah. +22 ATK, +12 SPD' },
-        { n: "Sisterblade's Wraps", slot: 'armor', forCompanion: 'Aisyah', q: 1, r: 'epic', price: 450, ilvl: 14, def: 16, spd: 6, d: 'Light Armor for Aisyah. +16 DEF, +6 SPD' },
-        { n: 'Crown of the Faithful', slot: 'head', forCompanion: 'Aisyah', q: 1, r: 'epic', price: 380, ilvl: 28, def: 18, atk: 8, d: 'Head gear for Aisyah. +18 DEF, +8 ATK' },
-        { n: 'Gauntlets of the Chosen', slot: 'hands', forCompanion: 'Aisyah', q: 1, r: 'epic', price: 380, ilvl: 28, atk: 12, def: 6, d: 'Hand gear for Aisyah. +12 ATK, +6 DEF' },
-        { n: 'Windrunner Greaves', slot: 'feet', forCompanion: 'Aisyah', q: 1, r: 'epic', price: 380, ilvl: 28, spd: 12, def: 6, d: 'Feet gear for Aisyah. +12 SPD, +6 DEF' },
-        { n: 'Band of Unbroken Bonds', slot: 'ring', forCompanion: 'Aisyah', q: 1, r: 'epic', price: 380, ilvl: 28, atk: 10, def: 6, d: 'Ring for Aisyah. +10 ATK, +6 DEF' },
-        { n: 'Heartward Talisman', slot: 'amulet', forCompanion: 'Aisyah', q: 1, r: 'epic', price: 400, ilvl: 28, def: 12, atk: 10, d: 'Amulet for Aisyah. +12 DEF, +10 ATK' },
-
-        { n: "Stormsinger's Rod", slot: 'weapon', forCompanion: 'Mezstorm', q: 1, r: 'epic', price: 480, ilvl: 14, atk: 18, spd: 8, d: 'Staff for Mezstorm. +18 ATK, +8 SPD' },
-        { n: "Lightweaver's Vestment", slot: 'armor', forCompanion: 'Mezstorm', q: 1, r: 'epic', price: 450, ilvl: 14, def: 12, atk: 8, d: 'Robes for Mezstorm. +12 DEF, +8 ATK' },
-        { n: 'Crown of the Faithful', slot: 'head', forCompanion: 'Mezstorm', q: 1, r: 'epic', price: 380, ilvl: 28, def: 18, atk: 8, d: 'Head gear for Mezstorm. +18 DEF, +8 ATK' },
-        { n: 'Gauntlets of the Chosen', slot: 'hands', forCompanion: 'Mezstorm', q: 1, r: 'epic', price: 380, ilvl: 28, atk: 12, def: 6, d: 'Hand gear for Mezstorm. +12 ATK, +6 DEF' },
-        { n: 'Windrunner Greaves', slot: 'feet', forCompanion: 'Mezstorm', q: 1, r: 'epic', price: 380, ilvl: 28, spd: 12, def: 6, d: 'Feet gear for Mezstorm. +12 SPD, +6 DEF' },
-        { n: 'Band of Unbroken Bonds', slot: 'ring', forCompanion: 'Mezstorm', q: 1, r: 'epic', price: 380, ilvl: 28, atk: 10, def: 6, d: 'Ring for Mezstorm. +10 ATK, +6 DEF' },
-        { n: 'Heartward Talisman', slot: 'amulet', forCompanion: 'Mezstorm', q: 1, r: 'epic', price: 400, ilvl: 28, def: 12, atk: 10, d: 'Amulet for Mezstorm. +12 DEF, +10 ATK' },
-
-        { n: "Healer's Resolve", slot: 'weapon', forCompanion: 'Eliz', q: 1, r: 'epic', price: 480, ilvl: 14, atk: 14, def: 10, d: 'Mace for Eliz. +14 ATK, +10 DEF' },
-        { n: "Lightweaver's Vestment", slot: 'armor', forCompanion: 'Eliz', q: 1, r: 'epic', price: 450, ilvl: 14, def: 12, atk: 8, d: 'Robes for Eliz. +12 DEF, +8 ATK' },
-        { n: 'Crown of the Faithful', slot: 'head', forCompanion: 'Eliz', q: 1, r: 'epic', price: 380, ilvl: 28, def: 18, atk: 8, d: 'Head gear for Eliz. +18 DEF, +8 ATK' },
-        { n: 'Gauntlets of the Chosen', slot: 'hands', forCompanion: 'Eliz', q: 1, r: 'epic', price: 380, ilvl: 28, atk: 12, def: 6, d: 'Hand gear for Eliz. +12 ATK, +6 DEF' },
-        { n: 'Windrunner Greaves', slot: 'feet', forCompanion: 'Eliz', q: 1, r: 'epic', price: 380, ilvl: 28, spd: 12, def: 6, d: 'Feet gear for Eliz. +12 SPD, +6 DEF' },
-        { n: 'Band of Unbroken Bonds', slot: 'ring', forCompanion: 'Eliz', q: 1, r: 'epic', price: 380, ilvl: 28, atk: 10, def: 6, d: 'Ring for Eliz. +10 ATK, +6 DEF' },
-        { n: 'Heartward Talisman', slot: 'amulet', forCompanion: 'Eliz', q: 1, r: 'epic', price: 400, ilvl: 28, def: 12, atk: 10, d: 'Amulet for Eliz. +12 DEF, +10 ATK' },
-
-        { n: "Scout's Recurve", slot: 'weapon', forCompanion: 'Senedra', q: 1, r: 'epic', price: 480, ilvl: 14, atk: 22, spd: 10, d: 'Bow for Senedra. +22 ATK, +10 SPD' },
-        { n: "Shadowstep Leathers", slot: 'armor', forCompanion: 'Senedra', q: 1, r: 'epic', price: 450, ilvl: 14, def: 16, spd: 6, d: 'Light Armor for Senedra. +16 DEF, +6 SPD' },
-        { n: 'Crown of the Faithful', slot: 'head', forCompanion: 'Senedra', q: 1, r: 'epic', price: 380, ilvl: 28, def: 18, atk: 8, d: 'Head gear for Senedra. +18 DEF, +8 ATK' },
-        { n: 'Gauntlets of the Chosen', slot: 'hands', forCompanion: 'Senedra', q: 1, r: 'epic', price: 380, ilvl: 28, atk: 12, def: 6, d: 'Hand gear for Senedra. +12 ATK, +6 DEF' },
-        { n: 'Windrunner Greaves', slot: 'feet', forCompanion: 'Senedra', q: 1, r: 'epic', price: 380, ilvl: 28, spd: 12, def: 6, d: 'Feet gear for Senedra. +12 SPD, +6 DEF' },
-        { n: 'Band of Unbroken Bonds', slot: 'ring', forCompanion: 'Senedra', q: 1, r: 'epic', price: 380, ilvl: 28, atk: 10, def: 6, d: 'Ring for Senedra. +10 ATK, +6 DEF' },
-        { n: 'Heartward Talisman', slot: 'amulet', forCompanion: 'Senedra', q: 1, r: 'epic', price: 400, ilvl: 28, def: 12, atk: 10, d: 'Amulet for Senedra. +12 DEF, +10 ATK' },
-
-        { n: 'Iron Discipline', slot: 'weapon', forCompanion: 'Zaki', q: 1, r: 'epic', price: 480, ilvl: 14, atk: 22, def: 8, d: 'Sword for Zaki. +22 ATK, +8 DEF' },
-        { n: "Steadfast's Bulwark", slot: 'armor', forCompanion: 'Zaki', q: 1, r: 'epic', price: 450, ilvl: 14, def: 22, d: 'Heavy Armor for Zaki. +22 DEF' },
-        { n: 'Crown of the Faithful', slot: 'head', forCompanion: 'Zaki', q: 1, r: 'epic', price: 380, ilvl: 28, def: 18, atk: 8, d: 'Head gear for Zaki. +18 DEF, +8 ATK' },
-        { n: 'Gauntlets of the Chosen', slot: 'hands', forCompanion: 'Zaki', q: 1, r: 'epic', price: 380, ilvl: 28, atk: 12, def: 6, d: 'Hand gear for Zaki. +12 ATK, +6 DEF' },
-        { n: 'Windrunner Greaves', slot: 'feet', forCompanion: 'Zaki', q: 1, r: 'epic', price: 380, ilvl: 28, spd: 12, def: 6, d: 'Feet gear for Zaki. +12 SPD, +6 DEF' },
-        { n: 'Band of Unbroken Bonds', slot: 'ring', forCompanion: 'Zaki', q: 1, r: 'epic', price: 380, ilvl: 28, atk: 10, def: 6, d: 'Ring for Zaki. +10 ATK, +6 DEF' },
-        { n: 'Heartward Talisman', slot: 'amulet', forCompanion: 'Zaki', q: 1, r: 'epic', price: 400, ilvl: 28, def: 12, atk: 10, d: 'Amulet for Zaki. +12 DEF, +10 ATK' },
-
-        { n: 'Spirit Vigil Talisman', slot: 'weapon', forCompanion: 'Soel', q: 1, r: 'epic', price: 480, ilvl: 14, atk: 14, spd: 10, d: 'Charm for Soel. +14 ATK, +10 SPD' },
-        { n: 'Spirit-Flame Coat', slot: 'armor', forCompanion: 'Soel', q: 1, r: 'epic', price: 450, ilvl: 14, def: 14, spd: 6, d: 'Warded Fur for Soel. +14 DEF, +6 SPD' },
-        { n: 'Eternal Blessing', slot: 'ring', forCompanion: 'Soel', q: 1, r: 'epic', price: 380, ilvl: 28, atk: 10, spd: 10, d: 'Blessing for Soel. +10 ATK, +10 SPD' },
-        { n: 'Collar of the Space Between', slot: 'amulet', forCompanion: 'Soel', q: 1, r: 'epic', price: 400, ilvl: 28, def: 12, atk: 10, d: 'Collar for Soel. +12 DEF, +10 ATK' }
-      ],
-      unlocked: true, zone: 'The Static Fields', zoneLv: 26, visitCount: 0 },
-{ n: 'Thessa', t: 'trader', title: 'The Fitter', icon: '\u2696\ufe0f', col: '#8b7355', zone: 'The Unbroken Vale', zoneLv: 56,
-      d: "She doesn't ask who it's for. \"Gear is gear until someone's actually wearing it,\" she says, laying out a rack that fits whoever needs it \u2014 no name stitched into any of it. Every newer face in the Guild ends up at her stall eventually, once they realize nobody built them a full kit yet.",
-      stock: [
-        { n: "Fitter's Circlet", slot: 'head', forCompanion: 'any', q: 1, r: 'rare', price: 340, ilvl: 28, def: 14, atk: 6, d: 'Universal head gear. +14 DEF, +6 ATK. Fits anyone.' },
-        { n: "Fitter's Wraps", slot: 'hands', forCompanion: 'any', q: 1, r: 'rare', price: 340, ilvl: 28, atk: 10, spd: 4, d: 'Universal hand gear. +10 ATK, +4 SPD. Fits anyone.' },
-        { n: "Fitter's Treads", slot: 'feet', forCompanion: 'any', q: 1, r: 'rare', price: 340, ilvl: 28, spd: 10, def: 4, d: 'Universal foot gear. +10 SPD, +4 DEF. Fits anyone.' },
-        { n: "Fitter's Band", slot: 'ring', forCompanion: 'any', q: 1, r: 'rare', price: 320, ilvl: 28, atk: 8, def: 4, d: 'Universal ring. +8 ATK, +4 DEF. Fits anyone.' },
-        { n: "Fitter's Charm", slot: 'amulet', forCompanion: 'any', q: 1, r: 'rare', price: 340, ilvl: 28, def: 10, spd: 6, d: 'Universal amulet. +10 DEF, +6 SPD. Fits anyone.' }
-      ],
-      unlocked: true, zone: 'The Unbroken Vale', zoneLv: 56, visitCount: 0 },
-{ n: 'Dr. AA', t: 'trader', title: "The Old-World Doctor", icon: '🩺', col: '#0d9488', zone: 'The Unbroken Vale', zoneLv: 56,
-      d: "A friend from San's old firm, of all people to turn up out here — the one who always had a ghost story ready between checkups and complained, only half-joking, that nobody ever wanted the vitamins as much as the stories. He still packs both. Proper medicine on one side of the cart, a stack of paperbacks on the other. He swears every one of them really happened.",
-      stock: [
-        { n: 'Antidote Vial', t: 'pot', eff: 'cure_ailment', q: 1, r: 'uncommon', price: 35, d: 'Clears whatever is currently ailing you. Dr. AA still insists on writing the dosage on the label, out of habit.' },
-        { n: 'Paracetamol', t: 'pot', eff: 'heal', v: 40, q: 1, r: 'common', price: 20, d: 'Restores 40 HP. "Take with food," he says, though out here that advice is mostly decorative. ' },
-        { n: 'Old-World Multivitamin', t: 'pot', eff: 'stat_boost', stat: 'atk', boostVal: 10, mins: 30, q: 1, r: 'uncommon', price: 45, d: '+10 ATK for 30 minutes. He used to hand these out to patients who swore they had no time to eat properly.' },
-        { n: 'Iron Tonic', t: 'pot', eff: 'perm_stat', stat: 'str', v: 1, q: 1, r: 'rare', price: 220, d: 'A permanent +1 STR. Not a miracle cure — just the kind of slow, unglamorous gain you only get from actually doing the work, the way the old Battle Square trials used to prove it.' },
-        { n: 'Vital Draught', t: 'pot', eff: 'perm_stat', stat: 'con', v: 1, q: 1, r: 'rare', price: 220, d: 'A permanent +1 CON. Dr. AA calls it "boring medicine that works," which he considers the highest compliment he gives anything.' },
-        { n: 'Real Ghost Stories of Borneo, Vol. 1', t: 'book', eff: 'learn_recipe', recipe: "Pontianak's Ward", q: 1, r: 'uncommon', price: 40, d: "Dr. AA collected these from patients over the years and swears not one word is invented. Buried in the third chapter, between two accounts of a woman in white, is a charm his patients' grandmothers used to actually make. Learn: Pontianak's Ward." },
-        { n: 'Real Ghost Stories of Borneo, Vol. 2', t: 'book', eff: 'learn_recipe', recipe: "Toyol's Bitter Root Tonic", q: 1, r: 'uncommon', price: 40, d: "He says this is the volume that actually kept him up at night. It also happens to include his own handwritten notes on the bitter-root tonic villagers used to keep the little thieving spirits away. Learn: Toyol's Bitter Root Tonic." },
-        { n: 'Real Ghost Stories of Borneo, Vol. 3', t: 'book', eff: 'learn_recipe', recipe: "The Hantu Raya's Bargain", q: 1, r: 'uncommon', price: 40, d: "He is already asking if anyone wants to hear about the one that did not make it into the book. This one did — an old account of what a Hantu Raya asks for in tribute, and what it gives back. Learn: The Hantu Raya's Bargain." }
-      ],
-      unlocked: false, zone: 'The Unbroken Vale', zoneLv: 56, visitCount: 0 },
-{ n: 'Amad', t: 'trader', title: 'Brunei Food Merchant', icon: '🍜', col: '#16a34a', zone: 'Whispering Woods', zoneLv: 1,
-      d: "A warm-hearted vendor from Bandar Seri Begawan who used to bring lunch straight to San's office floor, regular as anything — until he simply stopped showing up, months before the world ended, for reasons San never found out and still cannot ask him about directly, not in a way that would not feel strange. Out here he is exactly as warm as he always was. She has decided, for now, not to need the rest of the answer. He will buy anything you have — drops, loot, used gear — at fair prices.",
-      stock: [
-        { n: 'Nasi Katok', t: 'food', eff: 'heal', v: 25, q: 1, r: 'common', price: 12, d: 'Bruneian rice with sambal and fried chicken. Restores 25 HP.' },
-        { n: 'Nasi Lemak', t: 'food', eff: 'heal', v: 35, q: 1, r: 'common', price: 18, d: 'Coconut rice with anchovies, peanuts, egg and sambal. Restores 35 HP.' },
-        { n: 'Salad', t: 'food', eff: 'heal', v: 20, q: 1, r: 'common', price: 10, d: 'Fresh greens with tangy dressing. Restores 20 HP.' },
-        { n: 'Mee Goreng', t: 'food', eff: 'heal', v: 30, q: 1, r: 'common', price: 15, d: 'Stir-fried noodles with spice and soul. Restores 30 HP.' },
-        { n: 'Cauli Rice', t: 'food', eff: 'heal', v: 40, q: 1, r: 'uncommon', price: 22, d: 'Low-carb cauliflower rice bowl. Restores 40 HP.' },
-        { n: 'Teh Tarik', t: 'drink', eff: 'mana', v: 20, q: 1, r: 'common', price: 10, d: 'Pulled milk tea, sweet and creamy. Restores 20 MP.' },
-        { n: 'Kopi O', t: 'drink', eff: 'mana', v: 30, q: 1, r: 'common', price: 14, d: 'Strong black coffee, Brunei style. Restores 30 MP.' },
-        { n: 'Fresh Juice', t: 'drink', eff: 'mana', v: 25, q: 1, r: 'common', price: 12, d: 'Tropical fruit blend, freshly squeezed. Restores 25 MP.' }
-      ],
-      unlocked: true, visitCount: 0, buysAnything: true },
-{ n: 'Vex', t: 'trader', title: 'Planar Curio Dealer', icon: '🌀', col: '#a855f7', zone: 'Arcane Planar Tower', zoneLv: 11,
-      d: 'A being of indeterminate origin who trades in planar curiosities. Their wares shimmer with unstable energy.',
-      stock: [
-        { n: 'Planar Essence', t: 'mat', q: 1, r: 'rare', price: 45 },
-        { n: 'Aether Shard', t: 'mat', q: 1, r: 'rare', price: 55 },
-        { n: 'Chrono Sand', t: 'mat', q: 1, r: 'epic', price: 120 },
-        { n: 'Void Thread', t: 'mat', q: 1, r: 'epic', price: 100 },
-        { n: 'Planar Wand', slot: 'weapon', q: 1, r: 'epic', price: 450, atk: 16, int: 5, arcaneDmg: 6 },
-        { n: 'Riftward Cloak', slot: 'armor', q: 1, r: 'rare', price: 280, def: 8, int: 3, voidRes: 0.15 }
-      ],
-      unlocked: false, visitCount: 0 },
-{ n: 'Astrid', t: 'trader', title: 'Astral Merchant', icon: '✨', col: '#a855f7', zone: 'The Astral Maelstrom', zoneLv: 22,
-      d: 'A being woven from starlight who trades in astral artifacts. Her voice echoes like a memory of something beautiful.',
-      stock: [
-        { n: 'Astral Dust', t: 'mat', q: 1, r: 'rare', price: 55 },
-        { n: 'Void Fragment', t: 'mat', q: 1, r: 'rare', price: 65 },
-        { n: 'Astral Wand', slot: 'weapon', q: 1, r: 'epic', price: 500, atk: 18, int: 6, arcaneDmg: 7 },
-        { n: 'Voidweave Cloak', slot: 'armor', q: 1, r: 'epic', price: 320, def: 10, int: 4, voidRes: 0.20 },
-        { n: 'Starlight Pendant', slot: 'amulet', q: 1, r: 'rare', price: 180, int: 5, mpRegen: 3 },
-        { n: 'Planar Essence', t: 'mat', q: 1, r: 'rare', price: 50 }
-      ],
-      unlocked: false, visitCount: 0 },
-{ n: 'Kael', t: 'trader', title: 'The Last Astronomer', icon: '🔭', col: '#6366f1', zone: 'The Fractured Veil', zoneLv: 21,
-      d: 'A gaunt figure hunched over a telescope pointed at nothing. He trades in starlight and secrets. His eyes have seen too many dimensions.',
-      stock: [
-        { n: 'Reality Fragment', t: 'mat', q: 1, r: 'rare', price: 60 },
-        { n: 'Aether Shard', t: 'mat', q: 1, r: 'rare', price: 55 },
-        { n: 'Chrono Sand', t: 'mat', q: 1, r: 'epic', price: 130 },
-        { n: 'Veil Piercer', slot: 'weapon', q: 1, r: 'epic', price: 550, atk: 20, int: 7, arcaneDmg: 8 },
-        { n: 'Starshroud Cloak', slot: 'armor', q: 1, r: 'epic', price: 350, def: 12, int: 5, arcaneRes: 0.25 },
-        { n: 'Astronomer\'s Lens', slot: 'amulet', q: 1, r: 'rare', price: 200, int: 6, mpRegen: 4 }
-      ],
-      unlocked: false, visitCount: 0 },
-{ n: 'Ignis', t: 'trader', title: 'The Crucible Keeper', icon: '🔥', col: '#dc2626', zone: 'Infernal Crucible', zoneLv: 23,
-      d: 'A being of living flame who tends the eternal forge. His wares are forged in the heart of a dying star. He speaks in embers.',
-      stock: [
-        { n: 'Inferno Gem', t: 'mat', q: 1, r: 'rare', price: 70 },
-        { n: 'Ash Crystal', t: 'mat', q: 1, r: 'rare', price: 65 },
-        { n: 'Ember Core', t: 'mat', q: 1, r: 'epic', price: 140 },
-        { n: 'Phoenix Ash', t: 'mat', q: 1, r: 'epic', price: 150 },
-        { n: 'Infernal Brand', slot: 'weapon', q: 1, r: 'epic', price: 600, atk: 22, str: 6, fireDmg: 10 },
-        { n: 'Magmaforged Plate', slot: 'armor', q: 1, r: 'epic', price: 380, def: 14, con: 5, fireRes: 0.30 },
-        { n: 'Cinder Ring', slot: 'ring', q: 1, r: 'rare', price: 220, str: 5, fireDmg: 5, hpRegen: 2 }
-      ],
-      unlocked: false, visitCount: 0 },
-{ n: 'Glacielle', t: 'trader', title: 'The Frozen Merchant', icon: '❄️', col: '#06b6d4', zone: 'The Scorched Vein', zoneLv: 24,
-      d: 'An ice-witch who sells cold in a world of fire. Her breath frosts the air. Her prices are as sharp as her tongue.',
-      stock: [
-        { n: 'Magma Core', t: 'mat', q: 1, r: 'rare', price: 75 },
-        { n: 'Glass Shard', t: 'mat', q: 1, r: 'uncommon', price: 40 },
-        { n: 'Scorched Ember', t: 'mat', q: 1, r: 'rare', price: 70 },
-        { n: 'Frostfire Blade', slot: 'weapon', q: 1, r: 'epic', price: 650, atk: 24, dex: 5, fireDmg: 6, iceDmg: 6 },
-        { n: 'Thermal Ward', slot: 'armor', q: 1, r: 'epic', price: 400, def: 13, con: 4, fireRes: 0.20, iceRes: 0.20 },
-        { n: 'Equilibrium Stone', slot: 'amulet', q: 1, r: 'rare', price: 250, int: 5, fireDmg: 3, iceDmg: 3 }
-      ],
-      unlocked: false, visitCount: 0 },
-{ n: 'Marinus', t: 'trader', title: 'The Drowned Trader', icon: '🌊', col: '#0891b2', zone: 'Tidal Abyss', zoneLv: 25,
-      d: 'A spectral sailor who walks on the abyssal floor. His wares are waterlogged but powerful. He trades in pressure and pearls.',
-      stock: [
-        { n: 'Abyssal Pearl', t: 'mat', q: 1, r: 'rare', price: 80 },
-        { n: 'Frozen Ink', t: 'mat', q: 1, r: 'rare', price: 75 },
-        { n: 'Pressure Stone', t: 'mat', q: 1, r: 'epic', price: 160 },
-        { n: 'Abyssal Trident', slot: 'weapon', q: 1, r: 'epic', price: 700, atk: 26, str: 5, iceDmg: 8 },
-        { n: 'Kraken Scale Mail', slot: 'armor', q: 1, r: 'epic', price: 420, def: 15, con: 6, iceRes: 0.25 },
-        { n: 'Depth Charge', slot: 'amulet', q: 1, r: 'rare', price: 280, wis: 5, iceDmg: 4, mpRegen: 3 }
-      ],
-      unlocked: false, visitCount: 0 },
-{ n: 'Fulgora', t: 'trader', title: 'The Storm Merchant', icon: '⚡', col: '#eab308', zone: 'The Shattered Crown', zoneLv: 26,
-      d: 'A lightning-weaver who sells the storm\'s fury. Her hair crackles with static. Her shop is a Faraday cage of gold and thunder.',
-      stock: [
-        { n: 'Crown Fragment', t: 'mat', q: 1, r: 'rare', price: 85 },
-        { n: 'Sovereign Essence', t: 'mat', q: 1, r: 'epic', price: 170 },
-        { n: 'Skyfall Ore', t: 'mat', q: 1, r: 'rare', price: 80 },
-        { n: 'Thunderlord Spear', slot: 'weapon', q: 1, r: 'legendary', price: 800, atk: 28, dex: 6, lightDmg: 12 },
-        { n: 'Stormweave Robes', slot: 'armor', q: 1, r: 'epic', price: 450, def: 14, int: 6, lightRes: 0.30 },
-        { n: 'Lightning Rod Band', slot: 'ring', q: 1, r: 'epic', price: 320, dex: 5, lightDmg: 6, critChance: 0.05 }
-      ],
-      unlocked: false, visitCount: 0 },
-{ n: 'Nullus', t: 'trader', title: 'The Void Broker', icon: '🌑', col: '#a855f7', zone: 'The Hollow Throne', zoneLv: 27,
-      d: 'A faceless merchant who speaks from the shadows. His wares are memories of things that never existed. He takes payment in secrets.',
-      stock: [
-        { n: 'Throne Shard', t: 'mat', q: 1, r: 'epic', price: 180 },
-        { n: 'Hollow Crown', t: 'mat', q: 1, r: 'epic', price: 190 },
-        { n: 'Void Silk', t: 'mat', q: 1, r: 'rare', price: 90 },
-        { n: 'Null Blade', slot: 'weapon', q: 1, r: 'legendary', price: 900, atk: 30, int: 7, voidDmg: 14 },
-        { n: 'Voidshroud Mantle', slot: 'armor', q: 1, r: 'legendary', price: 500, def: 16, int: 6, voidRes: 0.35 },
-        { n: 'Absorption Ring', slot: 'ring', q: 1, r: 'epic', price: 350, int: 6, voidDmg: 5, lifeSteal: 0.08 }
-      ],
-      unlocked: false, visitCount: 0 },
-{ n: 'Chrona', t: 'trader', title: 'The Time Merchant', icon: '⏳', col: '#ec4899', zone: 'The Final Spire', zoneLv: 28,
-      d: 'A merchant who exists in all moments at once. She sells futures and pasts. Her prices are paid in years, but she accepts gold too.',
-      stock: [
-        { n: 'Spire Keystone', t: 'mat', q: 1, r: 'epic', price: 200 },
-        { n: 'Reality Thread', t: 'mat', q: 1, r: 'epic', price: 210 },
-        { n: 'Chrono Crystal', t: 'mat', q: 1, r: 'legendary', price: 250 },
-        { n: 'Paradox Edge', slot: 'weapon', q: 1, r: 'legendary', price: 1000, atk: 32, int: 8, arcaneDmg: 12, mpRegen: 3 },
-        { n: 'Temporal Aegis', slot: 'armor', q: 1, r: 'legendary', price: 550, def: 18, wis: 7, arcaneRes: 0.30, hpRegen: 4 },
-        { n: 'Infinity Loop', slot: 'ring', q: 1, r: 'legendary', price: 400, int: 7, wis: 4, arcaneDmg: 6, mpRegen: 4 }
-      ],
-      unlocked: false, visitCount: 0 },
-{ n: 'The Arbiter', t: 'trader', title: 'Final Curio Dealer', icon: '👁️', col: '#f59e0b', zone: 'The Apex', zoneLv: 29,
-      d: 'The last merchant in all realities. He has seen the end of everything. His wares are the remnants of completed worlds. He does not haggle.',
-      stock: [
-        { n: 'Apex Fragment', t: 'mat', q: 1, r: 'legendary', price: 300 },
-        { n: 'Final Key', t: 'mat', q: 1, r: 'legendary', price: 350 },
-        { n: 'Gate Stone', t: 'mat', q: 1, r: 'legendary', price: 400 },
-        { n: 'Reality Sunderer', slot: 'weapon', q: 1, r: 'legendary', price: 1500, atk: 40, int: 10, arcaneDmg: 15, voidDmg: 10, critChance: 0.08 },
-        { n: 'Apex Vestment', slot: 'armor', q: 1, r: 'legendary', price: 800, def: 22, int: 8, wis: 5, arcaneRes: 0.35, voidRes: 0.25, hpRegen: 5, mpRegen: 5 },
-        { n: 'The Crown of Ends', slot: 'head', q: 1, r: 'legendary', price: 600, int: 10, wis: 6, arcaneDmg: 8, voidDmg: 6, lifeSteal: 0.10, mpRegen: 3 },
-        { n: 'Planar Essence', t: 'mat', q: 3, r: 'rare', price: 55 }
-      ],
-      unlocked: false, visitCount: 0 }
-];
-</script>
-<script>
-
-function aethonRenderTraderCatalogue() {
-  const el=document.getElementById('traderList');
-  if(!el || typeof AETHON_TRADER_CATALOG === 'undefined') return;
-  el.innerHTML=AETHON_TRADER_CATALOG.map(trader => {
-    const stock=(trader.stock||[]).map(item =>
-      '<div class="trader-stock">• '+String(item.n||'Item')+' — '+Number(item.price||0)+'G</div>'
-    ).join('');
-    return '<div class="trader-card"><div class="trader-name">'+
-      String(trader.n||'Trader')+'</div><div class="trader-stock">'+
-      String(trader.title||trader.zone||'')+'</div>'+stock+'</div>';
-  }).join('');
-}
 
 // ---------------------------------------------------------------------------
 // AETHON CODEX ART ASSETS
@@ -2575,6 +2265,40 @@ const GAME_DATA = {
   xpPerLevel: [0, 100, 300, 600, 1000, 1500, 2100, 2800, 3600, 4500, 5500, 6600, 7800, 9100, 10500, 12000, 13600, 15300, 17100, 19000]
 };;
 
+
+/* ============================================================
+   CODEX EQUIPMENT FOUNDATION — v12.0
+   Phase 1: equipment definitions + compatibility only.
+   No loot, traders, inventory mutation, or battle-stat changes.
+   ============================================================ */
+const CODEX_EQUIPMENT_SLOTS = ['weapon','armor','accessory'];
+const CODEX_EQUIPMENT_RULES = {
+  san:{weapon:['san_focus'],armor:['caster'],accessory:['any']},
+  mezstorm:{weapon:['mezstorm_focus'],armor:['caster'],accessory:['any']},
+  eliz:{weapon:['eliz_focus'],armor:['caster'],accessory:['any']},
+  joel:{weapon:['sword_shield'],armor:['heavy'],accessory:['any']},
+  zaki:{weapon:['two_handed_sword'],armor:['heavy'],accessory:['any']},
+  aisyah:{weapon:['twin_blades'],armor:['light'],accessory:['any']},
+  senedra:{weapon:['bow'],armor:['light'],accessory:['any']}
+};
+const CODEX_EQUIPMENT = [
+  {id:'san_focus_basic',name:'Aether Focus',slot:'weapon',family:'san_focus',owner:'san',atk:1,magic:1},
+  {id:'mez_focus_basic',name:'Storm Focus',slot:'weapon',family:'mezstorm_focus',owner:'mezstorm',atk:1,magic:1},
+  {id:'eliz_focus_basic',name:'Healer’s Focus',slot:'weapon',family:'eliz_focus',owner:'eliz',atk:1,magic:1},
+  {id:'joel_sword_basic',name:'Knight’s Sword',slot:'weapon',family:'sword_shield',owner:'joel',atk:1},
+  {id:'joel_shield_basic',name:'Training Shield',slot:'accessory',family:'any',owner:'joel',defense:1},
+  {id:'zaki_sword_basic',name:'Warblade',slot:'weapon',family:'two_handed_sword',owner:'zaki',atk:2},
+  {id:'aisyah_blades_basic',name:'Sisterblades',slot:'weapon',family:'twin_blades',owner:'aisyah',atk:1},
+  {id:'senedra_bow_basic',name:'Scout Bow',slot:'weapon',family:'bow',owner:'senedra',atk:1}
+];
+function codexCanEquip(characterId,item){
+  if(!item||!characterId)return false;
+  if(item.owner&&item.owner!==characterId)return false;
+  const rule=CODEX_EQUIPMENT_RULES[characterId];
+  return !!(rule&&rule[item.slot]&&
+    (rule[item.slot].includes('any')||rule[item.slot].includes(item.family)));
+}
+
 // Party structure — Codex fixed roster
 // The seven original companions are always part of the party.
 // Soel is a familiar and does not consume a party slot.
@@ -3628,7 +3352,7 @@ function switchTab(tab) {
   if (nav) nav.classList.add('active');
 
   document.querySelectorAll(
-    '.dashboard-container, .journal-container, .party-container, .trader-container, .battle-container'
+    '.dashboard-container, .journal-container, .party-container, .equipment-container, .battle-container'
   ).forEach(c => c.classList.remove('active'));
 
   const content = document.getElementById(tab + 'Tab');
@@ -3636,7 +3360,7 @@ function switchTab(tab) {
       content.classList.contains('dashboard-container') ||
       content.classList.contains('journal-container') ||
       content.classList.contains('party-container') ||
-      content.classList.contains('trader-container') ||
+      content.classList.contains('equipment-container') ||
       content.classList.contains('battle-container')
   )) {
     content.classList.add('active');
@@ -3644,7 +3368,7 @@ function switchTab(tab) {
 
   if (tab === 'journal') renderJournal();
   if (tab === 'party') renderParty();
-  if (tab === 'trader') aethonRenderTraderCatalogue();
+  if (tab === 'equipment') renderEquipmentFoundation();
   if (tab === 'battle') renderBattle();
 }
 
@@ -3978,6 +3702,19 @@ function renderJournal() {
       if (backBtn) backBtn.scrollIntoView({ behavior: 'smooth', block: 'end' });
     });
   }
+}
+
+function renderEquipmentFoundation(){
+  const el=document.getElementById('equipmentRoster');
+  if(!el)return;
+  const core=['san','joel','aisyah','mezstorm','eliz','senedra','zaki'];
+  el.innerHTML=core.map(id=>{
+    const member=(gameState.party||[]).find(p=>p.id===id);
+    const name=member?member.name:id;
+    const items=CODEX_EQUIPMENT.filter(item=>codexCanEquip(id,item));
+    const list=items.map(item=>'<div class="equipment-slots">• '+item.name+' — '+item.slot+'</div>').join('');
+    return '<div class="equipment-card"><div class="equipment-name">'+name+'</div>'+list+'</div>';
+  }).join('');
 }
 
 function renderParty() {
