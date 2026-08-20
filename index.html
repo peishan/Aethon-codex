@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.6 Equip & Compare)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.7)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -959,6 +959,8 @@ body {
 .slot-row{display:flex;justify-content:space-between;align-items:center;gap:8px;color:var(--parchment-dark);padding:3px 0}
 .stat-compare{display:flex;flex-wrap:wrap;gap:8px;margin-top:7px;color:var(--parchment-dark);font-size:.88em}
 .stat-compare strong{color:var(--gold-light)}
+
+.equipment-battle-preview{margin-bottom:12px}
 </style>
 <!--
 AETHON CODEX ART MANIFEST
@@ -1109,6 +1111,13 @@ Add/update paths only in ART_ASSETS above.
         <div class="panel-title">Equipment</div>
         <div class="equipment-note">Equipment foundation ready. Loot and equipping will be added in later phases.</div>
         <div id="equipmentRoster"></div>
+      </div>
+    </div>
+
+    <div class="equipment-battle-preview panel">
+      <div class="panel-title">Equipment Combat Preview</div>
+      <div id="equipmentBattlePreview">
+        Equipped gear will contribute its ATK, MAG and DEF bonuses here.
       </div>
     </div>
 
@@ -2533,6 +2542,39 @@ function codexBattleCharacterStats(characterId, character) {
   return codexEffectiveStats(characterId, base);
 }
 
+
+/* ============================================================
+   CODEX EQUIPMENT BATTLE BRIDGE — v12.7
+   Phase 6: effective equipment stats are available to combat.
+   The existing combat engine remains authoritative; this bridge
+   provides additive gear bonuses for controlled integration.
+   ============================================================ */
+function codexCombatAttackBonus(characterId) {
+  return Number(codexEquipmentBonus(characterId).atk || 0);
+}
+
+function codexCombatMagicBonus(characterId) {
+  return Number(codexEquipmentBonus(characterId).magic || 0);
+}
+
+function codexCombatDefenseBonus(characterId) {
+  return Number(codexEquipmentBonus(characterId).defense || 0);
+}
+
+function codexApplyEquipmentToCharacter(characterId, character) {
+  if (!character) return character;
+  const bonus = codexEquipmentBonus(characterId);
+  return {
+    ...character,
+    stats: {
+      ...(character.stats || {}),
+      atk: Number(character.stats?.atk || character.stats?.attack || 0) + bonus.atk,
+      magic: Number(character.stats?.magic || character.stats?.mag || 0) + bonus.magic,
+      defense: Number(character.stats?.defense || character.stats?.def || character.stats?.ac || 0) + bonus.defense
+    }
+  };
+}
+
 // Party structure — Codex fixed roster
 // The seven original companions are always part of the party.
 // Soel is a familiar and does not consume a party slot.
@@ -3412,6 +3454,19 @@ function playerAction(actionType, spellIndex) {
   }
 }
 
+
+function renderEquipmentBattlePreview() {
+  const el=document.getElementById('equipmentBattlePreview');
+  if(!el)return;
+  const roster=['san','joel','aisyah','mezstorm','eliz','senedra','zaki'];
+  const names={san:'San',joel:'Joel',aisyah:'Aisyah',mezstorm:'Mezstorm',eliz:'Eliz',senedra:'Senedra',zaki:'Zaki'};
+  el.innerHTML=roster.map(id=>{
+    const b=codexEquipmentBonus(id);
+    return '<div class="equipped-row"><strong>'+names[id]+'</strong> — '+
+      'ATK +'+b.atk+' · MAG +'+b.magic+' · DEF +'+b.defense+'</div>';
+  }).join('');
+}
+
 function renderBattle() {
   if (gameState.battleState && gameState.battleState.chapterId) {
     const art = getBossArt(gameState.battleState.chapterId);
@@ -3609,7 +3664,7 @@ function switchTab(tab) {
   if (tab === 'equipment') renderEquipmentFoundation();
   if (tab === 'inventory') renderCodexInventory();
   if (tab === 'loot') renderLootFoundation();
-  if (tab === 'battle') renderBattle();
+  if (tab === 'battle') { renderEquipmentBattlePreview(); renderBattle(); }
 }
 
 function getChapterStatus(chapterId) {
