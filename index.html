@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.15.4)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.16)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -1014,6 +1014,13 @@ body {
 .trader-container.active{display:block}
 .tab-content{display:none}
 .tab-content.active{display:block}
+
+.loot-source-panel{margin-top:10px}
+.loot-source-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.loot-source-card{padding:9px;border:1px solid rgba(212,168,67,.18);border-radius:7px;background:rgba(13,31,51,.5)}
+.loot-source-card strong{display:block;color:var(--gold-light);font-family:Cinzel,serif}
+.loot-source-card span{display:block;font-size:.75rem;color:var(--parchment-dark);margin-top:3px}
+@media(max-width:520px){.loot-source-grid{grid-template-columns:1fr}}
 </style>
 <!--
 AETHON CODEX ART MANIFEST
@@ -1145,6 +1152,17 @@ Add/update paths only in ART_ASSETS above.
     </div>
 
     <div class="loot-container" id="lootTab">
+
+<div class="panel loot-source-panel">
+  <div class="panel-title">Loot Sources</div>
+  <p class="loot-note">The Codex can award equipment from three sources. Story chapters will determine when each source is encountered.</p>
+  <div class="loot-source-grid">
+    <div class="loot-source-card"><strong>Chest</strong><span>Early exploration rewards</span></div>
+    <div class="loot-source-card"><strong>Monster</strong><span>Common combat drops</span></div>
+    <div class="loot-source-card"><strong>Boss</strong><span>Signature equipment</span></div>
+  </div>
+</div>
+
       <div class="panel">
         <div class="panel-title">Loot Foundation</div>
         <div class="loot-note">Equipment can come from chests, monsters and bosses. Chapter rewards will determine when each loot cache is actually encountered.</div>
@@ -3868,6 +3886,7 @@ function buyFromCodexTrader(traderName,itemIndex){
   gameState.gold-=price;
   saveGame(); renderCodexTraderPanel(); renderCodexInventory();
   showNotification('Bought '+item.n+' for '+price+'G.');
+  if (typeof renderTrader === 'function') renderTrader();
 }
 
 
