@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.13.2)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.13.3)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -961,6 +961,11 @@ body {
 .stat-compare strong{color:var(--gold-light)}
 
 .equipment-battle-preview{margin-bottom:12px}
+
+.combat-log-panel{margin:8px 0;padding:9px;border:1px solid rgba(212,168,67,.22);background:rgba(10,20,35,.82);border-radius:8px}
+.combat-log-panel .panel-title{margin-bottom:5px}
+#visibleCombatLog{max-height:120px;overflow-y:auto;font-size:.86rem;line-height:1.35;color:var(--parchment-dark)}
+.combat-log-line{padding:2px 0;border-bottom:1px solid rgba(212,168,67,.07)}
 </style>
 <!--
 AETHON CODEX ART MANIFEST
@@ -1144,6 +1149,11 @@ Add/update paths only in ART_ASSETS above.
       </div>
     </div>
 </div>
+
+    <div class="combat-log-panel" id="visibleCombatLogPanel">
+      <div class="panel-title">Combat Log</div>
+      <div id="visibleCombatLog">Battle messages will appear here.</div>
+    </div>
 
     <div class="battle-container" id="battleTab">
       <div class="panel">
@@ -2987,6 +2997,15 @@ function addCombatLog(message, type) {
   entry.textContent = message;
   log.appendChild(entry);
   log.scrollTop = log.scrollHeight;
+  const visible = document.getElementById('visibleCombatLog');
+  if (visible) {
+    const lines = (battle.combatLog || []).slice(-8);
+    visible.innerHTML = lines.map(entry =>
+      '<div class="combat-log-line">' + String(entry.text || entry).replace(/</g,'&lt;') + '</div>'
+    ).join('');
+    visible.scrollTop = visible.scrollHeight;
+  }
+
 }
 
 function showDamagePopup(element, amount, type) {
@@ -3586,7 +3605,20 @@ function runPlayerAttackIntegrationTest() {
     ' damage · target HP '+result.targetHp;
 }
 
+
+function renderVisibleCombatLog() {
+  const visible=document.getElementById('visibleCombatLog');
+  const battle=gameState.battleState;
+  if(!visible)return;
+  const lines=battle && Array.isArray(battle.combatLog) ? battle.combatLog.slice(-8) : [];
+  visible.innerHTML=lines.length
+    ? lines.map(entry=>'<div class="combat-log-line">'+String(entry.text||entry).replace(/</g,'&lt;')+'</div>').join('')
+    : 'Battle messages will appear here.';
+  visible.scrollTop=visible.scrollHeight;
+}
+
 function renderBattle() {
+  renderVisibleCombatLog();
   if (gameState.battleState && gameState.battleState.chapterId) {
     const art = getBossArt(gameState.battleState.chapterId);
     if (art) console.debug('Aethon Codex boss art:', art);
