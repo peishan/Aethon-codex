@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.15)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.15.1)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -3817,6 +3817,7 @@ function switchTab(tab) {
   if (tab === 'inventory') renderCodexInventory();
   if (tab === 'loot') renderLootFoundation();
   if (tab === 'battle') { renderEquipmentBattlePreview(); renderPhysicalEquipmentTest(); renderBattle(); }
+  if (tab === 'trader' && typeof renderTrader === 'function') renderTrader();
 }
 
 function getChapterStatus(chapterId) {
