@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.14)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.15)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -988,6 +988,18 @@ body {
 .combat-log{max-height:130px;overflow-y:auto}
 .combat-log-entry{padding:3px 0;font-size:.84rem}
 @media(max-width:520px){.battle-actions{grid-template-columns:repeat(4,minmax(0,1fr))}.battle-actions button{min-height:40px;font-size:.78rem}}
+
+.trader-gold-display{margin:0 0 10px;color:var(--parchment-dark);font-size:.9rem}
+.trader-card{border:1px solid rgba(212,168,67,.22);background:rgba(13,31,51,.55);border-radius:8px;padding:10px;margin:8px 0}
+.trader-card.locked{opacity:.62}
+.trader-card-head{display:flex;justify-content:space-between;gap:8px}
+.trader-name{color:var(--gold-light);font-family:Cinzel,serif;font-size:1.05rem}
+.trader-zone,.trader-item-meta{font-size:.78rem;color:var(--parchment-dark)}
+.trader-desc,.trader-greeting{font-size:.84rem;color:var(--parchment-dark);margin-top:6px}
+.trader-stock{margin-top:8px}
+.trader-item{display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px solid rgba(212,168,67,.09);padding:8px 0}
+.trader-item-name{font-size:.9rem}
+.trader-buy{min-width:58px}
 </style>
 <!--
 AETHON CODEX ART MANIFEST
@@ -1112,15 +1124,16 @@ Add/update paths only in ART_ASSETS above.
 
     <div class="trader-container" id="traderTab">
       <div class="panel">
-        <div class="panel-title">Trader</div>
-        <p class="trader-test-message">Trader interface ready. The next phase will add the actual catalogue.</p>
+        <div class="panel-title">Traders</div>
+        <div class="trader-gold-display">Gold: <strong id="traderGold">0</strong>G</div>
+        <div id="traderList"></div>
       </div>
     </div>
 
     <div class="loot-container" id="lootTab">
       <div class="panel">
         <div class="panel-title">Loot Foundation</div>
-        <div class="loot-note">Loot definitions are ready. Nothing is awarded automatically in this phase.</div>
+        <div class="loot-note">Equipment can come from chests, monsters and bosses. Chapter rewards will determine when each loot cache is actually encountered.</div>
         <div id="lootRoster"></div>
       </div>
     </div>
@@ -1155,20 +1168,8 @@ Add/update paths only in ART_ASSETS above.
       </div>
     </div>
 
-    <div class="equipment-battle-preview panel">
-      <div class="panel-title">Live Physical Attack Test</div>
-      <div id="livePhysicalTest">
-        <button class="equip-btn" onclick="runLivePhysicalEquipmentTest()">Test equipped ATK on a 100 HP target</button>
-        <div id="livePhysicalResult" class="equipped-row"></div>
-      </div>
     </div>
 
-    <div class="equipment-battle-preview panel">
-      <div class="panel-title">Player Attack Integration Test</div>
-      <div id="playerAttackIntegration">
-        <button class="equip-btn" onclick="runPlayerAttackIntegrationTest()">Test Zaki's actual attack calculation</button>
-        <div id="playerAttackIntegrationResult" class="equipped-row"></div>
-      </div>
     </div>
 </div>
 <div class="battle-container" id="battleTab">
@@ -3599,25 +3600,6 @@ function renderPhysicalEquipmentTest() {
 }
 
 
-function runLivePhysicalEquipmentTest() {
-  const id='zaki';
-  const target={hp:100};
-  const damage=codexLivePhysicalAttack(id,10,target);
-  const el=document.getElementById('livePhysicalResult');
-  if(el) el.innerHTML='<strong>Zaki</strong> deals '+damage+
-    ' damage with base 10 + equipped ATK, leaving target at '+target.hp+' HP.';
-}
-
-
-function runPlayerAttackIntegrationTest() {
-  const target={hp:100};
-  const result=codexResolvePlayerPhysicalAttack('zaki',10,target);
-  const el=document.getElementById('playerAttackIntegrationResult');
-  if(el) el.innerHTML='<strong>Zaki</strong> attack result: '+result.damage+
-    ' damage · target HP '+result.targetHp;
-}
-
-
 function renderVisibleCombatLog() {
   const visible = document.getElementById('visibleCombatLog');
   if (!visible) return;
@@ -3965,6 +3947,11 @@ function completeQuest(chapterId) {
         } else if (reward.type === 'item') {
           if (!gameState.inventory) gameState.inventory = [];
           gameState.inventory.push(reward);
+        } else if (reward.type === 'loot') {
+          const acquired = codexAcquireLoot(reward.lootType || 'chest', reward.itemId);
+          if (acquired) {
+            showNotification('Loot acquired: ' + acquired.name);
+          }
         }
       });
     }
