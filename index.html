@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.0)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.3)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -935,6 +935,18 @@ body {
 .equipment-note{color:var(--parchment-dark);font-style:italic;margin:8px 0 16px}
 .equipment-card{border:1px solid rgba(212,168,67,.22);background:rgba(13,31,51,.65);border-radius:8px;padding:12px;margin:8px 0}
 .equipment-name{color:var(--gold-light);font-family:Cinzel,serif}.equipment-slots{color:var(--parchment-dark);font-size:.88em;margin-top:5px}
+
+.loot-container{display:none;animation:fadeIn .35s ease}.loot-container.active{display:block}
+.loot-note{color:var(--parchment-dark);font-style:italic;margin:8px 0 16px}
+.loot-card{border:1px solid rgba(212,168,67,.22);background:rgba(13,31,51,.65);border-radius:8px;padding:12px;margin:8px 0}
+.loot-type{color:var(--gold-light);font-family:Cinzel,serif}.loot-item{color:var(--parchment-dark);margin-top:5px}
+
+.inventory-container{display:none;animation:fadeIn .35s ease}.inventory-container.active{display:block}
+.inventory-note{color:var(--parchment-dark);font-style:italic;margin:8px 0 16px}
+.inventory-empty{color:var(--parchment-dark);padding:18px;border:1px solid rgba(212,168,67,.18);border-radius:8px}
+.inventory-item{border:1px solid rgba(212,168,67,.22);background:rgba(13,31,51,.65);border-radius:8px;padding:11px;margin:8px 0}
+.inventory-item-name{color:var(--gold-light);font-family:Cinzel,serif}
+.inventory-item-meta{color:var(--parchment-dark);font-size:.88em;margin-top:4px}
 </style>
 <!--
 AETHON CODEX ART MANIFEST
@@ -1005,6 +1017,8 @@ Add/update paths only in ART_ASSETS above.
       <button class="nav-tab" data-tab="journal" onclick="switchTab('journal')">Journal</button>
       <button class="nav-tab" data-tab="party" onclick="switchTab('party')">Party</button>
       <button class="nav-tab" data-tab="equipment" onclick="switchTab('equipment')">Equipment</button>
+      <button class="nav-tab" data-tab="inventory" onclick="switchTab('inventory')">Inventory</button>
+      <button class="nav-tab" data-tab="loot" onclick="switchTab('loot')">Loot</button>
       <button class="nav-tab" data-tab="trader" onclick="switchTab('trader')">Trader</button>
       <button class="nav-tab" data-tab="battle" onclick="switchTab('battle')" id="battleNavTab">Battle</button>
     </nav>
@@ -1059,6 +1073,22 @@ Add/update paths only in ART_ASSETS above.
       <div class="panel">
         <div class="panel-title">Trader</div>
         <p class="trader-test-message">Trader interface ready. The next phase will add the actual catalogue.</p>
+      </div>
+    </div>
+
+    <div class="loot-container" id="lootTab">
+      <div class="panel">
+        <div class="panel-title">Loot Foundation</div>
+        <div class="loot-note">Loot definitions are ready. Nothing is awarded automatically in this phase.</div>
+        <div id="lootRoster"></div>
+      </div>
+    </div>
+
+    <div class="inventory-container" id="inventoryTab">
+      <div class="panel">
+        <div class="panel-title">Inventory</div>
+        <div class="inventory-note">Equipment acquired from chests, monsters and bosses will appear here.</div>
+        <div id="codexInventoryList"></div>
       </div>
     </div>
 
@@ -2299,6 +2329,99 @@ function codexCanEquip(characterId,item){
     (rule[item.slot].includes('any')||rule[item.slot].includes(item.family)));
 }
 
+
+/* ============================================================
+   CODEX LOOT FOUNDATION — v12.1
+   Phase 2: equipment can exist as loot.
+   This phase does NOT equip items or alter combat stats.
+   ============================================================ */
+const CODEX_LOOT = {
+  chest: [
+    { id:'chest_light_armor_01', itemId:'trailweave_armor', name:'Trailweave Armor', slot:'armor', family:'light', owner:null, defense:2 },
+    { id:'chest_accessory_01', itemId:'traveler_charm', name:'Traveler Charm', slot:'accessory', family:'any', owner:null, hp:3 }
+  ],
+  monster: [
+    { id:'monster_caster_drop_01', itemId:'arcane_shard', name:'Arcane Shard', slot:'accessory', family:'any', owner:null, magic:1 },
+    { id:'monster_light_drop_01', itemId:'scout_leather', name:'Scout Leather', slot:'armor', family:'light', owner:null, defense:1 }
+  ],
+  boss: [
+    { id:'boss_heavy_drop_01', itemId:'guardian_plate', name:'Guardian Plate', slot:'armor', family:'heavy', owner:null, defense:4 },
+    { id:'boss_san_drop_01', itemId:'memory_focus', name:'Memory Focus', slot:'weapon', family:'san_focus', owner:'san', magic:3 }
+  ]
+};
+
+function getCodexLoot(type) {
+  return (CODEX_LOOT[type] || []).map(item => ({...item}));
+}
+
+function addCodexLootToInventory(type, itemId) {
+  const item = getCodexLoot(type).find(x => x.id === itemId);
+  if (!item) return false;
+  if (!Array.isArray(gameState.inventory)) gameState.inventory = [];
+  gameState.inventory.push({...item});
+  return true;
+}
+
+
+/* ============================================================
+   CODEX INVENTORY FOUNDATION — v12.2
+   Phase 3: loot acquisition.
+   Existing save/battle systems are untouched.
+   ============================================================ */
+function codexEnsureEquipmentInventory() {
+  if (!Array.isArray(gameState.codexEquipmentInventory)) {
+    gameState.codexEquipmentInventory = [];
+  }
+  return gameState.codexEquipmentInventory;
+}
+
+function codexAcquireLoot(type, itemId) {
+  const source = getCodexLoot(type);
+  const item = source.find(x => x.id === itemId);
+  if (!item) return null;
+
+  const inventory = codexEnsureEquipmentInventory();
+  const copy = {...item, acquiredFrom:type};
+  inventory.push(copy);
+  return copy;
+}
+
+function codexInventoryItems() {
+  return codexEnsureEquipmentInventory();
+}
+
+function codexInventoryLabel(item) {
+  return item ? item.name : 'Unknown Item';
+}
+
+
+/* ============================================================
+   CODEX LOOT REWARD TEST — v12.3
+   One boss reward is wired into the existing victory flow.
+   ============================================================ */
+const CODEX_TEST_BOSS_REWARD = {
+  itemId: 'boss_heavy_drop_01',
+  type: 'boss',
+  label: 'Guardian Plate'
+};
+
+function codexAwardTestBossReward() {
+  const item = getCodexLoot(CODEX_TEST_BOSS_REWARD.type)
+    .find(x => x.id === CODEX_TEST_BOSS_REWARD.itemId);
+  if (!item) return null;
+
+  const inventory = codexEnsureEquipmentInventory();
+
+  // Prevent duplicate rewards if the victory renderer/event fires twice.
+  if (inventory.some(x => x.codexRewardKey === 'v12.3-test-boss')) {
+    return inventory.find(x => x.codexRewardKey === 'v12.3-test-boss');
+  }
+
+  const copy = {...item, acquiredFrom:'boss', codexRewardKey:'v12.3-test-boss'};
+  inventory.push(copy);
+  return copy;
+}
+
 // Party structure — Codex fixed roster
 // The seven original companions are always part of the party.
 // Soel is a familiar and does not consume a party slot.
@@ -3049,6 +3172,7 @@ function nextTurn() {
       battle.boss.hp = 0;
       battle.active = false;
       battle.winner = 'party';
+      codexAwardTestBossReward();
       battle.waitingForPlayer = false;
       gameState.battleInputLocked = false;
       addCombatLog('=== ' + battle.boss.name + ' has been defeated! ===', 'crit');
@@ -3086,6 +3210,7 @@ function playerAction(actionType, spellIndex) {
       battle.boss.hp = 0;
       battle.active = false;
       battle.winner = 'party';
+      codexAwardTestBossReward();
       battle.waitingForPlayer = false;
       gameState.battleInputLocked = false;
       addCombatLog('=== ' + battle.boss.name + ' has been defeated! ===', 'crit');
@@ -3352,7 +3477,7 @@ function switchTab(tab) {
   if (nav) nav.classList.add('active');
 
   document.querySelectorAll(
-    '.dashboard-container, .journal-container, .party-container, .equipment-container, .battle-container'
+    '.dashboard-container, .journal-container, .party-container, .equipment-container, .inventory-container, .loot-container, .battle-container'
   ).forEach(c => c.classList.remove('active'));
 
   const content = document.getElementById(tab + 'Tab');
@@ -3361,6 +3486,8 @@ function switchTab(tab) {
       content.classList.contains('journal-container') ||
       content.classList.contains('party-container') ||
       content.classList.contains('equipment-container') ||
+      content.classList.contains('inventory-container') ||
+      content.classList.contains('loot-container') ||
       content.classList.contains('battle-container')
   )) {
     content.classList.add('active');
@@ -3369,6 +3496,8 @@ function switchTab(tab) {
   if (tab === 'journal') renderJournal();
   if (tab === 'party') renderParty();
   if (tab === 'equipment') renderEquipmentFoundation();
+  if (tab === 'inventory') renderCodexInventory();
+  if (tab === 'loot') renderLootFoundation();
   if (tab === 'battle') renderBattle();
 }
 
@@ -3702,6 +3831,38 @@ function renderJournal() {
       if (backBtn) backBtn.scrollIntoView({ behavior: 'smooth', block: 'end' });
     });
   }
+}
+
+
+
+function renderCodexInventory() {
+  const el=document.getElementById('codexInventoryList');
+  if(!el)return;
+  const items=codexInventoryItems();
+  if(!items.length){
+    el.innerHTML='<div class="inventory-empty">No equipment has been acquired yet.</div>';
+    return;
+  }
+  el.innerHTML=items.map(item =>
+    '<div class="inventory-item"><div class="inventory-item-name">'+
+    item.name+'</div><div class="inventory-item-meta">'+
+    item.slot+' · '+(item.acquiredFrom||'unknown source')+
+    (item.codexRewardKey==='v12.3-test-boss' ? ' · Boss reward test' : '')+
+    '</div></div>'
+  ).join('');
+}
+
+function renderLootFoundation(){
+  const el=document.getElementById('lootRoster');
+  if(!el)return;
+  const labels={chest:'Chests',monster:'Monster Drops',boss:'Boss Drops'};
+  el.innerHTML=Object.keys(labels).map(type=>{
+    const rows=getCodexLoot(type).map(item=>
+      '<div class="loot-item">• '+item.name+' — '+item.slot+
+      (item.owner?' · '+item.owner:'')+'</div>'
+    ).join('');
+    return '<div class="loot-card"><div class="loot-type">'+labels[type]+'</div>'+rows+'</div>';
+  }).join('');
 }
 
 function renderEquipmentFoundation(){
