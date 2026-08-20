@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.7)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.8)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -1118,6 +1118,13 @@ Add/update paths only in ART_ASSETS above.
       <div class="panel-title">Equipment Combat Preview</div>
       <div id="equipmentBattlePreview">
         Equipped gear will contribute its ATK, MAG and DEF bonuses here.
+      </div>
+    </div>
+
+    <div class="equipment-battle-preview panel">
+      <div class="panel-title">Physical Attack Test</div>
+      <div id="physicalEquipmentTest">
+        Equipped ATK bonuses are ready for the physical damage calculation.
       </div>
     </div>
 
@@ -2575,6 +2582,17 @@ function codexApplyEquipmentToCharacter(characterId, character) {
   };
 }
 
+
+/* ============================================================
+   CODEX PHYSICAL EQUIPMENT INTEGRATION — v12.8
+   First live combat-stat integration: physical attack bonus.
+   Magic and defense remain unchanged until separately tested.
+   ============================================================ */
+function codexPhysicalAttackDamage(characterId, baseDamage) {
+  const bonus = codexCombatAttackBonus(characterId);
+  return Math.max(0, Math.floor(Number(baseDamage || 0) + bonus));
+}
+
 // Party structure — Codex fixed roster
 // The seven original companions are always part of the party.
 // Soel is a familiar and does not consume a party slot.
@@ -3467,6 +3485,20 @@ function renderEquipmentBattlePreview() {
   }).join('');
 }
 
+
+function renderPhysicalEquipmentTest() {
+  const el=document.getElementById('physicalEquipmentTest');
+  if(!el)return;
+  const roster=['san','joel','aisyah','mezstorm','eliz','senedra','zaki'];
+  const names={san:'San',joel:'Joel',aisyah:'Aisyah',mezstorm:'Mezstorm',eliz:'Eliz',senedra:'Senedra',zaki:'Zaki'};
+  el.innerHTML=roster.map(id=>{
+    const bonus=codexCombatAttackBonus(id);
+    const sample=codexPhysicalAttackDamage(id,10);
+    return '<div class="equipped-row"><strong>'+names[id]+'</strong> — '+
+      'ATK bonus +'+bonus+' · sample 10 → <strong>'+sample+'</strong></div>';
+  }).join('');
+}
+
 function renderBattle() {
   if (gameState.battleState && gameState.battleState.chapterId) {
     const art = getBossArt(gameState.battleState.chapterId);
@@ -3664,7 +3696,7 @@ function switchTab(tab) {
   if (tab === 'equipment') renderEquipmentFoundation();
   if (tab === 'inventory') renderCodexInventory();
   if (tab === 'loot') renderLootFoundation();
-  if (tab === 'battle') { renderEquipmentBattlePreview(); renderBattle(); }
+  if (tab === 'battle') { renderEquipmentBattlePreview(); renderPhysicalEquipmentTest(); renderBattle(); }
 }
 
 function getChapterStatus(chapterId) {
