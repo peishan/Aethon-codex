@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.12)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.13.1)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -1142,6 +1142,12 @@ Add/update paths only in ART_ASSETS above.
         <button class="equip-btn" onclick="runPlayerAttackIntegrationTest()">Test Zaki's actual attack calculation</button>
         <div id="playerAttackIntegrationResult" class="equipped-row"></div>
       </div>
+    </div>
+
+    <div class="equipment-battle-preview panel">
+      <div class="panel-title">Joel Defence Test</div>
+      <button class="equip-btn" onclick="runJoelDefenseTest()">Test 10 damage on Joel</button>
+      <div id="joelDefenseTestResult" class="equipped-row"></div>
     </div>
 
     <div class="battle-container" id="battleTab">
@@ -2641,6 +2647,20 @@ function codexResolvePlayerPhysicalAttack(characterId, baseDamage, target) {
   };
 }
 
+
+/* v12.13.1 — incoming DEF test */
+function codexTestIncomingDamage(characterId, rawDamage) {
+  const defense = codexCombatDefenseBonus(characterId);
+  const finalDamage = Math.max(1, Number(rawDamage || 0) - defense);
+  return {characterId, rawDamage:Number(rawDamage||0), defense, finalDamage};
+}
+function runJoelDefenseTest() {
+  const r=codexTestIncomingDamage('joel', 10);
+  const el=document.getElementById('joelDefenseTestResult');
+  if(el) el.innerHTML='<strong>Joel</strong> — raw 10 · DEF bonus -'+r.defense+
+    ' · final damage <strong>'+r.finalDamage+'</strong>';
+}
+
 // Party structure — Codex fixed roster
 // The seven original companions are always part of the party.
 // Soel is a familiar and does not consume a party slot.
@@ -3271,12 +3291,13 @@ function aiAction(member) {
     }
   }
 
-  const atkMod = getModifier(member.stats.atk);
+  const effectiveMember = codexEffectiveStats(member.id, member.stats);
+  const atkMod = getModifier(effectiveMember.atk);
   const roll = rollDie(20);
   const total = roll + atkMod;
 
   if (roll === 20) {
-    const dmg = rollDice(2, 6) * 2;
+    const dmg = rollDice(2, 6) * 2 + codexCombatAttackBonus(member.id);
     boss.hp = Math.max(boss.hp - dmg, 0);
     addCombatLog('CRITICAL! ' + member.name + ' deals ' + dmg + ' damage to ' + boss.name + '!', 'crit');
   } else if (total >= boss.ac) {
@@ -3303,7 +3324,9 @@ function bossAction() {
   }
 
   const target = activeParty[Math.floor(Math.random() * activeParty.length)];
-  const dmg = Math.max(1, (phase.damage || 1) + rollDie(6));
+  const rawDamage = Math.max(1, (phase.damage || 1) + rollDie(6));
+  const defenseBonus = codexCombatDefenseBonus(target.id);
+  const dmg = Math.max(1, rawDamage - defenseBonus);
 
   damagePartyMember(target.id, dmg);
   addCombatLog(
