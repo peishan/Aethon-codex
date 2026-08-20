@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.13.7)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.14)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -976,6 +976,18 @@ body {
 .combat-log-panel .panel-title{font-family:Cinzel,serif;color:var(--gold-light);font-size:1rem;margin-bottom:6px}
 #combatLog,#visibleCombatLog{max-height:150px;overflow-y:auto;font-size:.86rem;line-height:1.4;color:var(--parchment-dark)}
 .combat-log-entry,.combat-log-line{padding:4px 0;border-bottom:1px solid rgba(212,168,67,.08)}
+
+/* v12.14 — compact mobile battle UI; mechanics unchanged */
+.party-battle-grid.battle-compact-party{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin:8px 0}
+.battle-compact-party .battle-member{padding:6px 4px;min-height:0}
+.battle-compact-party .battle-member-avatar{width:46px;height:46px;margin:0 auto 4px}
+.battle-compact-party .battle-member-name{font-size:.68rem;line-height:1.1}
+.battle-compact-party .battle-member-role,.battle-compact-party .battle-hp-bar,.battle-compact-party .battle-hp-text,.battle-compact-party .battle-mp-bar,.battle-compact-party .battle-mp-text{display:none}
+.battle-actions{position:sticky;bottom:6px;z-index:20;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:7px;margin-top:6px;background:rgba(8,18,30,.97);border:1px solid rgba(212,168,67,.28);border-radius:9px}
+.battle-actions button{min-height:42px;padding:7px 6px}
+.combat-log{max-height:130px;overflow-y:auto}
+.combat-log-entry{padding:3px 0;font-size:.84rem}
+@media(max-width:520px){.battle-actions{grid-template-columns:repeat(4,minmax(0,1fr))}.battle-actions button{min-height:40px;font-size:.78rem}}
 </style>
 <!--
 AETHON CODEX ART MANIFEST
@@ -3273,7 +3285,7 @@ function aiAction(member) {
     eliz: member.name + ' raises her healing power!',
     zaki: member.name + ' surges forward with his weapon!'
   };
-  battle.narrative = narrativeByRole[member.id] || member.name + ' prepares to act...';
+  battle.narrative = narrativeByRole[member.id] || member.name + ' acts.';
 
   // AI logic based on role
   if (member.role === 'Healer') {
@@ -3416,7 +3428,7 @@ function nextTurn() {
 
   battle.waitingForPlayer = false;
   gameState.battleInputLocked = true;
-  battle.narrative = current.name + ' prepares to act...';
+  battle.narrative = current.name + ' acts.';
   renderBattle();
 
   setTimeout(() => {
@@ -3691,7 +3703,7 @@ function renderBattle() {
     html += '<button class="battle-action-btn defend" onclick="playerAction(\'defend\')">🛡️ Defend</button>';
     html += '</div>';
   } else if (battle.active && currentMember && gameState.battleInputLocked) {
-    html += '<div class="battle-turn-status">⚔️ ' + currentMember.name + ' is taking their turn...</div>';
+    html += '<div class="battle-turn-status">⚔️ ' + currentMember.name + ' takes their turn.</div>';
   }
 
   // Combat narrative — one short line describing the latest action.
