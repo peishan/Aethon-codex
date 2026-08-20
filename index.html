@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v11.2)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v11.4)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -914,6 +914,22 @@ body {
   opacity: .85;
 }
 
+
+.trader-container { display:none; animation:fadeIn .35s ease; }
+.trader-container.active { display:block; }
+.trader-test-message { color:var(--parchment-dark); font-style:italic; padding:16px 0; }
+
+
+.battle-turn-narrative {
+  margin: 14px 0 10px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--gold);
+  background: rgba(212,168,67,.06);
+  color: var(--parchment);
+  font-style: italic;
+  min-height: 20px;
+}
+
 </style>
 <!--
 AETHON CODEX ART MANIFEST
@@ -983,6 +999,7 @@ Add/update paths only in ART_ASSETS above.
       <button class="nav-tab active" data-tab="dashboard" onclick="switchTab('dashboard')">Dashboard</button>
       <button class="nav-tab" data-tab="journal" onclick="switchTab('journal')">Journal</button>
       <button class="nav-tab" data-tab="party" onclick="switchTab('party')">Party</button>
+      <button class="nav-tab" data-tab="trader" onclick="switchTab('trader')">Trader</button>
       <button class="nav-tab" data-tab="battle" onclick="switchTab('battle')" id="battleNavTab">Battle</button>
     </nav>
     <div class="save-controls">
@@ -1030,6 +1047,13 @@ Add/update paths only in ART_ASSETS above.
         <div class="party-active-list" id="partyActiveList"></div>
       </div>
       <div class="party-grid" id="partyGrid"></div>
+    </div>
+
+    <div class="trader-container" id="traderTab">
+      <div class="panel">
+        <div class="panel-title">Trader</div>
+        <p class="trader-test-message">Trader interface ready. The next phase will add the actual catalogue.</p>
+      </div>
     </div>
 
     <div class="battle-container" id="battleTab">
@@ -2282,7 +2306,7 @@ let gameState = {
 // ============================================================
 
 const SAVE_KEY = 'aethonCodexSave';
-const SAVE_VERSION = 10;
+const SAVE_VERSION = 11;
 
 function getSavePayload() {
   return {
@@ -2938,73 +2962,59 @@ function nextTurn() {
   const battle = gameState.battleState;
   if (!battle || !battle.active) return;
 
-  updateBossPhase();
-
-  if (battle.boss.hp <= 0) {
-    battle.active = false;
-    battle.winner = 'party';
-    gameState.battleInputLocked = false;
-    addCombatLog('=== ' + battle.boss.name + ' has been defeated! ===', 'crit');
-    renderBattle();
-    return;
-  }
-
-  const activeParty = getActiveParty();
-  if (activeParty.length === 0) {
-    battle.active = false;
-    battle.winner = 'boss';
-    gameState.battleInputLocked = false;
-    addCombatLog('=== The party has fallen... ===', 'damage');
-    renderBattle();
-    return;
-  }
-
-  // Move to the next living party member. Turn order contains IDs, so
-  // current HP is always read from the canonical party state.
   advanceBattleTurn();
   if (!battle.active) return;
 
   const current = getCurrentBattleMember();
   if (!current) return;
 
-  renderBattle();
-
+  // CRITICAL: stop the turn engine here. San's turn is a real pause.
+  // No timeout, enemy action, or automatic follow-up may run until the
+  // player explicitly chooses an action.
   if (current.id === 'san') {
-    // Player input is now available.
     gameState.battleInputLocked = false;
+    battle.waitingForPlayer = true;
+    battle.narrative = 'San watches the battlefield. What will she do?';
+    renderBattle();
     return;
   }
 
+  battle.waitingForPlayer = false;
   gameState.battleInputLocked = true;
+  battle.narrative = current.name + ' prepares to act...';
+  renderBattle();
+
   setTimeout(() => {
     if (!battle.active) return;
 
     aiAction(current);
+    if (!battle.active) {
+      renderBattle();
+      return;
+    }
+
     renderBattle();
 
+    // Continue until the next living member, but if that member is San,
+    // nextTurn() stops and waits for player input.
+    advanceBattleTurn();
     if (!battle.active) return;
 
-    // Boss acts after the party's final turn in the current round.
-    const sanTurn = battle.turnOrder.findIndex(t => t.id === 'san');
-    const currentIndex = battle.turnIndex;
-    const nextIndex = (currentIndex + 1) % battle.turnOrder.length;
+    const next = getCurrentBattleMember();
+    if (!next) return;
 
-    if (sanTurn === -1 || nextIndex === sanTurn) {
-      setTimeout(() => {
-        if (!battle.active) return;
-        bossAction();
-        renderBattle();
-
-        if (!battle.active) return;
-        gameState.battleInputLocked = false;
-        advanceBattleTurn();
-        nextTurn();
-      }, 800);
-    } else {
+    if (next.id === 'san') {
       gameState.battleInputLocked = false;
-      nextTurn();
+      battle.waitingForPlayer = true;
+      battle.narrative = 'San watches the battlefield. What will she do?';
+      renderBattle();
+      return;
     }
-  }, 600);
+
+    // Continue automatic allied/boss turns through nextTurn().
+    gameState.battleInputLocked = false;
+    nextTurn();
+  }, 650);
 }
 
 function playerAction(actionType, spellIndex) {
@@ -3170,6 +3180,10 @@ function renderBattle() {
     html += '<div class="battle-turn-status">⚔️ ' + currentMember.name + ' is taking their turn...</div>';
   }
 
+  // Combat narrative — one short line describing the latest action.
+  html += '<div class="battle-turn-narrative" id="battleTurnNarrative">' +
+    (battle.narrative || 'The battle begins...') + '</div>';
+
   // Combat log
   html += '<div class="combat-log" id="combatLog">';
   battle.log.forEach(entry => {
@@ -3286,6 +3300,7 @@ function switchTab(tab) {
 
   if (tab === 'journal') renderJournal();
   if (tab === 'party') renderParty();
+  if (tab === 'trader') { /* Phase 1: static panel only */ }
   if (tab === 'battle') renderBattle();
 }
 
