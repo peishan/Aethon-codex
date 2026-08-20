@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.3)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.4 Final)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -2399,27 +2399,38 @@ function codexInventoryLabel(item) {
    CODEX LOOT REWARD TEST — v12.3
    One boss reward is wired into the existing victory flow.
    ============================================================ */
-const CODEX_TEST_BOSS_REWARD = {
-  itemId: 'boss_heavy_drop_01',
-  type: 'boss',
-  label: 'Guardian Plate'
+const CODEX_BOSS_LOOT_BY_BOSS = {
+  'Astral Devourer': [{'itemId': 'devourer_edge', 'name': 'Devourer Edge', 'slot': 'weapon', 'family': 'two_handed_sword', 'atk': 3}],
+  'Infernal Tyrant': [{'itemId': 'infernal_guard', 'name': 'Infernal Guard', 'slot': 'armor', 'family': 'heavy', 'defense': 3}],
+  'The Veilshaper': [{'itemId': 'veilshaper_focus', 'name': 'Veilshaper Focus', 'slot': 'weapon', 'family': 'mezstorm_focus', 'magic': 3}],
+  'Abyssal Leviathan': [{'itemId': 'abyssal_focus', 'name': 'Abyssal Focus', 'slot': 'weapon', 'family': 'san_focus', 'magic': 3}]
 };
+function codexGetBossLoot(chapterId, bossName) {
+  const name = String(bossName || '').trim();
+  return (CODEX_BOSS_LOOT_BY_BOSS[name] || []).map(x => ({...x}));
+}
 
-function codexAwardTestBossReward() {
-  const item = getCodexLoot(CODEX_TEST_BOSS_REWARD.type)
-    .find(x => x.id === CODEX_TEST_BOSS_REWARD.itemId);
-  if (!item) return null;
+function codexAwardBossLoot(chapterId, bossName) {
+  const drops = codexGetBossLoot(chapterId, bossName);
+  if (!drops.length) return [];
 
   const inventory = codexEnsureEquipmentInventory();
+  const awarded = [];
 
-  // Prevent duplicate rewards if the victory renderer/event fires twice.
-  if (inventory.some(x => x.codexRewardKey === 'v12.3-test-boss')) {
-    return inventory.find(x => x.codexRewardKey === 'v12.3-test-boss');
-  }
+  drops.forEach(item => {
+    const key = 'boss-loot-' + String(bossName || chapterId) + '-' + item.itemId;
+    if (inventory.some(x => x.codexRewardKey === key)) return;
+    const copy = {...item, acquiredFrom:'boss', codexRewardKey:key};
+    inventory.push(copy);
+    awarded.push(copy);
+  });
 
-  const copy = {...item, acquiredFrom:'boss', codexRewardKey:'v12.3-test-boss'};
-  inventory.push(copy);
-  return copy;
+  return awarded;
+}
+
+function codexAwardTestBossReward() {
+  // Retained as a harmless compatibility wrapper for old saves/code paths.
+  return [];
 }
 
 // Party structure — Codex fixed roster
@@ -3172,7 +3183,7 @@ function nextTurn() {
       battle.boss.hp = 0;
       battle.active = false;
       battle.winner = 'party';
-      codexAwardTestBossReward();
+      codexAwardBossLoot(battle.chapterId, battle.boss && battle.boss.name);
       battle.waitingForPlayer = false;
       gameState.battleInputLocked = false;
       addCombatLog('=== ' + battle.boss.name + ' has been defeated! ===', 'crit');
@@ -3210,7 +3221,7 @@ function playerAction(actionType, spellIndex) {
       battle.boss.hp = 0;
       battle.active = false;
       battle.winner = 'party';
-      codexAwardTestBossReward();
+      codexAwardBossLoot(battle.chapterId, battle.boss && battle.boss.name);
       battle.waitingForPlayer = false;
       gameState.battleInputLocked = false;
       addCombatLog('=== ' + battle.boss.name + ' has been defeated! ===', 'crit');
@@ -3847,7 +3858,7 @@ function renderCodexInventory() {
     '<div class="inventory-item"><div class="inventory-item-name">'+
     item.name+'</div><div class="inventory-item-meta">'+
     item.slot+' · '+(item.acquiredFrom||'unknown source')+
-    (item.codexRewardKey==='v12.3-test-boss' ? ' · Boss reward test' : '')+
+    
     '</div></div>'
   ).join('');
 }
