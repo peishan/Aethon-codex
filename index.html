@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.29)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.29-fixed)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -1350,9 +1350,17 @@ body {
 .companion-ai-mode{opacity:.75}
 
 
-/* v12.29 — Prominent companion skill announcements */
-.combat-log-entry.skill{font-weight:800!important;font-size:.72rem!important;padding:5px 6px!important;margin:3px 0!important;border:1px solid rgba(212,168,67,.38)!important;border-radius:5px!important;background:rgba(212,168,67,.08)!important}
-.companion-skill-banner{display:block!important;margin:6px 0!important;padding:7px 8px!important;border:1px solid rgba(212,168,67,.5)!important;border-radius:6px!important;text-align:center!important;font-family:Cinzel,serif!important;font-size:.72rem!important;font-weight:900!important;background:rgba(212,168,67,.10)!important}
+/* v12.29 fixed — prominent companion skill log, no combat-flow changes */
+.combat-log-entry.skill{
+  font-weight:800!important;
+  font-size:.72rem!important;
+  padding:5px 6px!important;
+  margin:3px 0!important;
+  border:1px solid rgba(212,168,67,.38)!important;
+  border-radius:5px!important;
+  background:rgba(212,168,67,.08)!important;
+}
+
 </style>
 <!--
 AETHON CODEX ART MANIFEST
@@ -4077,14 +4085,6 @@ function companionAIAction(member, battle) {
 }
 
 
-function announceCompanionSkill(member, skill, emoji, battle) {
-  const label = companionAIName(skill).toUpperCase();
-  const line = emoji + ' ' + String(member.name || 'COMPANION').toUpperCase() + ' — ' + label + '!';
-  addCombatLog(line, 'skill');
-  battle.narrative = line;
-  return line;
-}
-
 function executeCompanionSkill(member, skill, battle) {
   if (!member || !battle || !battle.active) return false;
   const boss = battle.boss;
@@ -4099,7 +4099,7 @@ function executeCompanionSkill(member, skill, battle) {
     gameState.party.filter(p => p.active && p.currentHP > 0).forEach(p => {
       p._battleCryBonus = 3;
     });
-    announceCompanionSkill(member, skill, '📢', battle);
+    addCombatLog('📢 ' + member.name.toUpperCase() + ' — BATTLE CRY!', 'skill');
     addCombatLog('Party ATK +3 for 2 turns!', 'info');
     battle.narrative = member.name + ' rallies the party!';
     return true;
@@ -4108,7 +4108,7 @@ function executeCompanionSkill(member, skill, battle) {
   if (skill === 'iron_will' && member.currentMP >= 15) {
     spend(15);
     member._defBonus = 4;
-    announceCompanionSkill(member, skill, '🛡️', battle);
+    addCombatLog('🛡️ ' + member.name.toUpperCase() + ' — IRON WILL!', 'skill');
     addCombatLog(member.name + ' DEF +4!', 'info');
     battle.narrative = member.name + ' braces for the incoming attack.';
     return true;
@@ -4122,10 +4122,10 @@ function executeCompanionSkill(member, skill, battle) {
     let dmg;
     if (roll === 20) {
       dmg = rollDice(3,10) * 2 + codexCombatAttackBonus(member.id);
-      addCombatLog('🐎 ' + member.name + ' uses Vanguard Charge — CRITICAL ' + dmg + ' damage!', 'crit');
+      addCombatLog('🐎 ' + member.name.toUpperCase() + ' — VANGUARD CHARGE! CRITICAL ' + dmg + ' damage!', 'skill');
     } else {
       dmg = Math.max(1, rollDice(3,10) + atkMod);
-      addCombatLog('🐎 ' + member.name + ' uses Vanguard Charge — ' + dmg + ' damage!', 'damage');
+      addCombatLog('🐎 ' + member.name.toUpperCase() + ' — VANGUARD CHARGE! ' + dmg + ' damage!', 'skill');
     }
     boss.hp = Math.max(0, boss.hp - dmg);
     battle.narrative = member.name + ' charges through the enemy line!';
@@ -4143,7 +4143,7 @@ function executeJoelSkill(member, skill, battle) {
     gameState.party.filter(p => p.active && p.currentHP > 0).forEach(p => {
       p._divineProtection = 1;
     });
-    announceCompanionSkill(member, skill, '🛡️', battle);
+    addCombatLog('🛡️ ' + member.name.toUpperCase() + ' — DIVINE PROTECTION!', 'skill');
     addCombatLog('The party is shielded!', 'info');
     battle.narrative = member.name + ' raises his shield and protects the party!';
     return true;
