@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.31)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.32 — San Spell System)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -1614,6 +1614,49 @@ Add/update paths only in ART_ASSETS above.
 </div>
 
 <script>
+/* SAN_SPELLBOOK_V1 */
+const SAN_SPELLBOOK_V1 = {
+  1: [
+    { id:'arcane_bolt', name:'Arcane Bolt', emoji:'✨', mp:5, power:1.00,
+      type:'single', description:'Reliable single-target arcane damage.' }
+  ],
+  3: [
+    { id:'ember_burst', name:'Ember Burst', emoji:'🔥', mp:10, power:1.35,
+      type:'single', description:'Stronger single-target magical damage.' }
+  ],
+  5: [
+    { id:'echo_pulse', name:'Echo Pulse', emoji:'🌌', mp:15, power:1.45,
+      type:'single', description:'A Codex-touched pulse of Aethon magic.' }
+  ],
+  7: [
+    { id:'arcane_ward', name:'Arcane Ward', emoji:'🛡️', mp:15, power:0,
+      type:'defensive', description:'Protective arcane magic.' }
+  ],
+  9: [
+    { id:'astral_surge', name:'Astral Surge', emoji:'💥', mp:25, power:1.90,
+      type:'single', description:'Powerful focused arcane damage.' }
+  ],
+  10: [
+    { id:'daybreak', name:'Daybreak', emoji:'🌟', mp:35, power:2.25,
+      type:'single', description:'San’s first major milestone spell.' }
+  ]
+};
+
+function getSanKnownSpells(level) {
+  const known = [];
+  Object.keys(SAN_SPELLBOOK_V1)
+    .map(Number)
+    .sort((a,b) => a-b)
+    .forEach(unlockLevel => {
+      if (level >= unlockLevel) known.push(...SAN_SPELLBOOK_V1[unlockLevel]);
+    });
+  return known;
+}
+
+function getSanSpellUnlocks(level) {
+  return SAN_SPELLBOOK_V1[level] || [];
+}
+
 
 // ---------------------------------------------------------------------------
 // AETHON CODEX ART ASSETS
@@ -4235,7 +4278,26 @@ function executeElizSkill(member, skill, battle) {
   return false;
 }
 
+
+function initializeSanSpellbookV1() {
+  const san = (gameState.party || []).find(p => p.id === 'san');
+  if (!san) return;
+
+  const level = Number(san.level || san.lvl || 1);
+  san.spellbook = getSanKnownSpells(level).map(s => s.id);
+
+  // Keep the combat UI compact: four prepared spell slots initially.
+  if (!Array.isArray(san.preparedSpells) || !san.preparedSpells.length) {
+    san.preparedSpells = getSanKnownSpells(level).slice(0, 4).map(s => s.id);
+  }
+}
+
+function sanSpellById(id) {
+  const all = Object.values(SAN_SPELLBOOK_V1).flat();
+  return all.find(s => s.id === id) || null;
+}
 function aiAction(member) {
+  initializeSanSpellbookV1();
   const battle = gameState.battleState;
   if (!battle || !battle.active || !member) return;
   const boss = battle.boss;
