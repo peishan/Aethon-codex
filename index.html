@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.39 — San Higher Spell Progression)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.40 — Mezstorm Lightning</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -1381,7 +1381,7 @@ Add/update paths only in ART_ASSETS above.
 }
 .codex-build-footer strong { font-weight:700; }
 </style>
-</head>
+<style id="codex-build-fixed-v1">.codex-build-fixed{position:fixed;right:8px;bottom:6px;z-index:99999;padding:3px 7px;border-radius:6px;background:rgba(0,0,0,.55);color:inherit;font:600 10px/1.2 sans-serif;letter-spacing:.5px;pointer-events:none;opacity:.75}</style></head>
 <body>
 
 <svg width="0" height="0" style="position:absolute;">
@@ -1627,6 +1627,44 @@ Add/update paths only in ART_ASSETS above.
 </div>
 
 <script>
+/* MEZSTORM_SPELLBOOK_V1 */
+const MEZSTORM_SPELLBOOK_V1 = {
+  1: [{id:'lightning_bolt',name:'Lightning Bolt',emoji:'⚡',mp:5,power:1.10,type:'single',description:'Reliable single-target storm magic.'}],
+  3: [{id:'thunder_strike',name:'Thunder Strike',emoji:'🌩️',mp:10,power:1.40,type:'single',description:'A heavier bolt backed by thunder.'}],
+  5: [{id:'chain_lightning',name:'Chain Lightning',emoji:'⛓️',mp:18,power:1.25,type:'multi',description:'Lightning that can arc between enemies.'}],
+  7: [{id:'storm_surge',name:'Storm Surge',emoji:'🌪️',mp:22,power:1.60,type:'multi',description:'A violent burst of storm energy.'}],
+  10:[{id:'tempest',name:'Tempest',emoji:'🌩️',mp:35,power:2.20,type:'multi',description:'Mezstorm calls down a devastating storm.'}]
+};
+function getMezstormKnownSpells(level){
+  const known=[];
+  Object.keys(MEZSTORM_SPELLBOOK_V1).map(Number).sort((a,b)=>a-b).forEach(l=>{
+    if(level>=l) known.push(...MEZSTORM_SPELLBOOK_V1[l]);
+  });
+  return known;
+}
+function mezstormSpellById(id){
+  return Object.values(MEZSTORM_SPELLBOOK_V1).flat().find(s=>s.id===id)||null;
+}
+function initializeMezstormSpellbookV1(){
+  const mez=(gameState.party||[]).find(p=>p.id==='mezstorm');
+  if(!mez) return;
+  const known=getMezstormKnownSpells(Number(gameState.level||1));
+  mez.spellbook=known.map(s=>s.id);
+  if(!Array.isArray(mez.preparedSpells)||!mez.preparedSpells.length){
+    mez.preparedSpells=known.slice(0,4).map(s=>s.id);
+  } else {
+    mez.preparedSpells=mez.preparedSpells.filter(id=>known.some(s=>s.id===id));
+    known.forEach(s=>{if(mez.preparedSpells.length<4&&!mez.preparedSpells.includes(s.id)) mez.preparedSpells.push(s.id);});
+  }
+}
+function getMezstormPreparedSpellDataV1(){
+  const mez=(gameState.party||[]).find(p=>p.id==='mezstorm');
+  if(!mez) return [];
+  initializeMezstormSpellbookV1();
+  return (mez.preparedSpells||[]).map(mezstormSpellById).filter(Boolean);
+}
+const STORM_STAFF_V1={id:'storm_staff',name:'Storm Staff',emoji:'⚡',description:'A staff charged with contained lightning.',magicPower:3,mp:5,lightningBonus:0.10};
+
 /* SAN_SPELLBOOK_V1 */
 const SAN_SPELLBOOK_V1 = {
   1: [
@@ -6039,5 +6077,5 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-</body>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.40</div></body>
 </html>
