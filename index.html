@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.35 — San Spell UI Fixed)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.36 — Ember Burst)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -4284,13 +4284,23 @@ function initializeSanSpellbookV1() {
   if (!san) return;
 
   const level = Number(san.level || san.lvl || 1);
-  san.spellbook = getSanKnownSpells(level).map(s => s.id);
+  const known = getSanKnownSpells(level);
+  san.spellbook = known.map(s => s.id);
 
-  // Keep the combat UI compact: four prepared spell slots initially.
+  // Keep the compact four-button layout. Newly unlocked spells are added
+  // automatically until the prepared list is full.
   if (!Array.isArray(san.preparedSpells) || !san.preparedSpells.length) {
-    san.preparedSpells = getSanKnownSpells(level).slice(0, 4).map(s => s.id);
+    san.preparedSpells = known.slice(0, 4).map(s => s.id);
+  } else {
+    known.forEach(spell => {
+      if (san.preparedSpells.length < 4 &&
+          !san.preparedSpells.includes(spell.id)) {
+        san.preparedSpells.push(spell.id);
+      }
+    });
   }
 }
+
 
 function sanSpellById(id) {
   const all = Object.values(SAN_SPELLBOOK_V1).flat();
