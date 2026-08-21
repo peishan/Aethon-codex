@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.22)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.23)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -1096,6 +1096,227 @@ body {
 .battle-action-label{font-size:.62rem!important}
 .battle-action-sub{font-size:.5rem!important}
 @media(max-width:380px){.party-battle-grid{grid-template-columns:1fr!important}.battle-actions{grid-template-columns:repeat(2,1fr)!important}}
+
+/* ============================================================
+   v12.23 — Compact Battle Screen / Square Portrait Layout
+   ============================================================ */
+.battle-arena{
+  padding:10px!important;
+  margin-bottom:12px!important;
+  border-radius:10px!important;
+}
+.battle-v2-header{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:8px!important;
+  margin-bottom:6px!important;
+}
+.battle-v2-round{
+  font-family:'Cinzel',serif!important;
+  font-size:.72rem!important;
+  color:var(--gold-light)!important;
+  letter-spacing:1px!important;
+}
+.battle-v2-turn{
+  font-family:'Cinzel',serif!important;
+  font-size:.66rem!important;
+  color:var(--parchment-dark)!important;
+  text-align:right!important;
+}
+.battle-turn-order{
+  display:flex!important;
+  align-items:center!important;
+  gap:4px!important;
+  overflow-x:auto!important;
+  padding:4px 0 7px!important;
+  scrollbar-width:thin!important;
+}
+.turn-chip{
+  flex:0 0 38px!important;
+  width:38px!important;
+  height:38px!important;
+  min-width:38px!important;
+  padding:2px!important;
+  border:1px solid rgba(212,168,67,.35)!important;
+  border-radius:6px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  overflow:hidden!important;
+  background:rgba(8,22,37,.9)!important;
+  color:var(--parchment)!important;
+  font-family:'Cinzel',serif!important;
+  font-size:.47rem!important;
+}
+.turn-chip.active{
+  border:2px solid var(--gold)!important;
+  box-shadow:0 0 10px rgba(212,168,67,.45)!important;
+}
+.turn-chip.turn-chip-boss{
+  border-color:var(--red-accent)!important;
+  color:var(--red-accent)!important;
+}
+.turn-chip img{
+  width:100%!important;
+  height:100%!important;
+  object-fit:cover!important;
+  border-radius:4px!important;
+}
+.boss-section.v2-boss{
+  display:grid!important;
+  grid-template-columns:78px 1fr!important;
+  grid-template-rows:auto auto auto auto!important;
+  column-gap:10px!important;
+  align-items:center!important;
+  text-align:left!important;
+  padding:9px!important;
+  margin-bottom:9px!important;
+  border-radius:8px!important;
+}
+.boss-section.v2-boss .boss-avatar{
+  grid-row:1 / span 4!important;
+  width:78px!important;
+  height:92px!important;
+  margin:0!important;
+  border-radius:7px!important;
+  border:2px solid var(--red-accent)!important;
+  overflow:hidden!important;
+  box-shadow:0 0 16px rgba(192,57,43,.25)!important;
+}
+.boss-section.v2-boss .boss-avatar img{
+  width:100%!important;
+  height:100%!important;
+  max-height:none!important;
+  object-fit:cover!important;
+}
+.boss-section.v2-boss .boss-name{
+  font-size:1rem!important;
+  margin:0!important;
+}
+.boss-section.v2-boss .boss-phase{
+  font-size:.58rem!important;
+  margin:0!important;
+}
+.boss-section.v2-boss .boss-hp-bar{
+  height:17px!important;
+  max-width:none!important;
+  margin:2px 0!important;
+  border-radius:8px!important;
+}
+.boss-section.v2-boss .boss-hp-text{font-size:.62rem!important}
+.boss-section.v2-boss > div:last-child{
+  font-size:.62rem!important;
+  margin-top:0!important;
+  line-height:1.2!important;
+}
+.party-battle-grid{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:6px!important;
+  margin-bottom:8px!important;
+}
+.battle-member{
+  display:grid!important;
+  grid-template-columns:42px 1fr!important;
+  grid-template-rows:auto auto 5px auto 5px auto!important;
+  column-gap:7px!important;
+  align-items:center!important;
+  min-height:55px!important;
+  padding:6px!important;
+  text-align:left!important;
+  border-radius:7px!important;
+}
+.battle-member-avatar{
+  grid-row:1 / span 6!important;
+  width:42px!important;
+  height:50px!important;
+  margin:0!important;
+  border-radius:5px!important;
+  border:2px solid var(--gold-dark)!important;
+  overflow:hidden!important;
+}
+.battle-member-avatar img{
+  width:100%!important;
+  height:100%!important;
+  object-fit:cover!important;
+}
+.battle-member-name{
+  font-size:.68rem!important;
+  margin:0!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+.battle-member-role{
+  font-size:.47rem!important;
+  margin:0!important;
+  letter-spacing:.7px!important;
+}
+.battle-hp-bar,.battle-mp-bar{
+  height:4px!important;
+  margin:1px 0!important;
+}
+.battle-hp-text,.battle-mp-text{
+  font-size:.48rem!important;
+  line-height:1!important;
+}
+.battle-actions{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:5px!important;
+  margin-top:8px!important;
+}
+.battle-action-btn{
+  min-width:0!important;
+  min-height:46px!important;
+  padding:5px 2px!important;
+  border-radius:6px!important;
+}
+.battle-action-label{
+  display:block!important;
+  font-size:.58rem!important;
+  line-height:1.05!important;
+}
+.battle-action-sub{
+  display:block!important;
+  font-size:.43rem!important;
+  margin-top:2px!important;
+}
+.battle-result-strip{
+  margin:6px 0!important;
+  padding:5px 7px!important;
+  font-size:.61rem!important;
+  border-radius:5px!important;
+}
+.battle-turn-narrative{
+  margin:5px 0!important;
+  padding:6px 7px!important;
+  font-size:.62rem!important;
+  line-height:1.25!important;
+}
+.combat-log{
+  max-height:115px!important;
+  padding:5px!important;
+  border-radius:6px!important;
+  font-size:.57rem!important;
+  line-height:1.3!important;
+}
+.combat-log-entry{
+  padding:2px 5px!important;
+  margin-bottom:2px!important;
+}
+@media(max-width:380px){
+  .party-battle-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:4px!important}
+  .battle-member{grid-template-columns:36px 1fr!important;column-gap:5px!important;padding:5px!important}
+  .battle-member-avatar{width:36px!important;height:44px!important}
+  .battle-member-name{font-size:.61rem!important}
+  .battle-member-role{font-size:.42rem!important}
+  .battle-hp-text,.battle-mp-text{font-size:.43rem!important}
+  .boss-section.v2-boss{grid-template-columns:64px 1fr!important}
+  .boss-section.v2-boss .boss-avatar{width:64px!important;height:76px!important}
+  .battle-action-label{font-size:.52rem!important}
+}
+
 </style>
 <!--
 AETHON CODEX ART MANIFEST
@@ -4152,17 +4373,21 @@ function renderBattle() {
     '</div>';
   html += '</div>';
 
-  // Turn order is informational only; the existing turn engine remains unchanged.
-  html += '<div class="battle-turn-order">';
+  // Turn order remains informational only; portraits make it readable at a glance.
+  html += '<div class="battle-turn-order" aria-label="Turn order">';
   (battle.turnOrder || []).forEach(turn => {
     const member = getPartyMember(turn.id);
     if (!member) return;
     const active = currentTurn && currentTurn.id === turn.id;
     const dead = member.currentHP <= 0;
-    html += '<div class="turn-chip ' + (active ? 'active ' : '') + (dead ? 'dead' : '') + '">' +
-      String(member.name || '').slice(0, 8) + '</div>';
+    html += '<div class="turn-chip ' + (active ? 'active ' : '') + (dead ? 'dead' : '') + '" title="' +
+      String(member.name || '') + '">' +
+      safeImage(getPartyArt(member), member.name + ' turn portrait', 'turn-chip-portrait', member.icon) +
+      '</div>';
   });
-  html += '<div class="turn-chip turn-chip-boss">' + String(boss.name || 'Boss').slice(0, 8) + '</div>';
+  html += '<div class="turn-chip turn-chip-boss" title="' + String(boss.name || 'Boss') + '">' +
+    safeImage(getBossArt(battle.chapterId), boss.name + ' turn portrait', 'turn-chip-portrait', boss.icon) +
+    '</div>';
   html += '</div>';
 
   // Boss section
