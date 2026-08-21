@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.20.1)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.21)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -1042,6 +1042,35 @@ body {
 .book4-type{display:block;font-family:inherit;font-size:.68rem;color:var(--parchment-dark);margin-top:2px;text-transform:uppercase;letter-spacing:.06em}
 .book4-boss{display:inline-block;margin-top:5px;padding:3px 6px;border:1px solid rgba(212,168,67,.2);border-radius:5px;font-family:inherit;font-size:.68rem;color:var(--gold-light)}
 
+
+/* v12.21 — Combat Screen v2
+   Visual/UI polish only: clearer boss focus, turn order, compact action bar,
+   and readable combat result text. Existing battle calculations remain intact. */
+.battle-v2-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.battle-v2-round{font-family:Cinzel,serif;color:var(--gold-light);font-size:.78rem;letter-spacing:.08em}
+.battle-v2-turn{color:var(--parchment-dark);font-size:.78rem;text-align:right}
+.battle-turn-order{display:flex;gap:5px;overflow-x:auto;padding:6px 2px 9px;margin-bottom:7px;scrollbar-width:none}
+.battle-turn-order::-webkit-scrollbar{display:none}
+.turn-chip{flex:0 0 auto;min-width:46px;padding:4px 6px;text-align:center;border:1px solid rgba(212,168,67,.16);border-radius:7px;background:rgba(13,31,51,.65);color:var(--parchment-dark);font-size:.68rem}
+.turn-chip.active{border-color:var(--gold);box-shadow:0 0 9px rgba(212,168,67,.18);color:var(--gold-light)}
+.turn-chip.dead{opacity:.35;text-decoration:line-through}
+.turn-chip-boss{border-color:rgba(176,72,72,.35)}
+.battle-action-label{display:block;font-family:Cinzel,serif;font-size:.72rem;letter-spacing:.04em}
+.battle-action-sub{display:block;font-size:.62rem;opacity:.72;margin-top:2px}
+.battle-result-strip{margin:8px 0;padding:8px 10px;border-left:3px solid var(--gold);background:rgba(212,168,67,.07);border-radius:0 7px 7px 0;color:var(--parchment);font-size:.86rem}
+.battle-result-strip strong{color:var(--gold-light);font-family:Cinzel,serif}
+.battle-member.active-turn{box-shadow:0 0 0 1px rgba(212,168,67,.55),0 0 14px rgba(212,168,67,.12)}
+.boss-section.v2-boss{position:relative}
+.boss-section.v2-boss .boss-avatar{margin-bottom:10px}
+.boss-section.v2-boss .boss-name{font-size:1.2rem}
+.boss-art-missing{min-height:220px;display:flex;align-items:center;justify-content:center}
+@media(max-width:520px){
+  .battle-v2-header{margin-top:2px}
+  .battle-v2-round{font-size:.7rem}
+  .battle-v2-turn{font-size:.7rem}
+  .turn-chip{min-width:42px}
+  .battle-result-strip{font-size:.8rem}
+}
 </style>
 <!--
 AETHON CODEX ART MANIFEST
@@ -3756,13 +3785,13 @@ function aiAction(member) {
   if (roll === 20) {
     const dmg = rollDice(2, 6) * 2 + codexCombatAttackBonus(member.id);
     boss.hp = Math.max(boss.hp - dmg, 0);
-    addCombatLog('CRITICAL! ' + member.name + ' deals ' + dmg + ' damage to ' + boss.name + '!', 'crit');
+    addCombatLog(member.name + ' — Attack — CRITICAL ' + dmg + ' damage', 'crit');
   } else if (total >= boss.ac) {
     const dmg = rollDice(2, 6) + atkMod;
     boss.hp = Math.max(boss.hp - dmg, 0);
-    addCombatLog(member.name + ' hits ' + boss.name + ' for ' + dmg + ' damage!', 'damage');
+    addCombatLog(member.name + ' — Attack — ' + dmg + ' damage', 'damage');
   } else {
-    addCombatLog(member.name + ' misses ' + boss.name + '!', 'info');
+    addCombatLog(member.name + ' — Attack — Miss', 'info');
   }
 }
 
@@ -3786,11 +3815,7 @@ function bossAction() {
   const dmg = Math.max(1, rawDamage - defenseBonus);
 
   damagePartyMember(target.id, dmg);
-  addCombatLog(
-    boss.name + ' → ' + target.name + ' — ' + dmg + ' damage' +
-    (defenseBonus > 0 ? ' (DEF -' + defenseBonus + ')' : ''),
-    'damage'
-  );
+  addCombatLog(boss.name + ' — Signature Strike — ' + target.name + ' takes ' + dmg + ' damage' + (defenseBonus > 0 ? ' (DEF -' + defenseBonus + ')' : ''), 'damage');
 
   if (target.currentHP <= 0) {
     addCombatLog(target.name + ' has fallen!', 'damage');
@@ -4058,10 +4083,6 @@ function renderVisibleCombatLog() {
 
 function renderBattle() {
   renderVisibleCombatLog();
-  if (gameState.battleState && gameState.battleState.chapterId) {
-    const art = getBossArt(gameState.battleState.chapterId);
-    if (art) console.debug('Aethon Codex boss art:', art);
-  }
   const battle = gameState.battleState;
   const container = document.getElementById('battleContent');
 
@@ -4071,16 +4092,35 @@ function renderBattle() {
   }
 
   const boss = battle.boss;
-  const phase = boss.phases[boss.phaseIndex];
-  const hpPercent = (boss.hp / boss.maxHP) * 100;
-  const activeParty = getActiveParty();
+  const phase = boss.phases[boss.phaseIndex] || boss.phases[0];
+  const hpPercent = Math.max(0, Math.min(100, (boss.hp / boss.maxHP) * 100));
   const currentTurn = battle.turnOrder[battle.turnIndex];
   const currentMember = getCurrentBattleMember();
 
   let html = '<div class="battle-arena">';
 
+  html += '<div class="battle-v2-header">';
+  html += '<div class="battle-v2-round">ROUND ' + Number(battle.round || 1) + '</div>';
+  html += '<div class="battle-v2-turn">' +
+    (currentMember ? (currentMember.name + (currentMember.id === 'san' ? ' — YOUR TURN' : ' — ACTING')) : 'Battle') +
+    '</div>';
+  html += '</div>';
+
+  // Turn order is informational only; the existing turn engine remains unchanged.
+  html += '<div class="battle-turn-order">';
+  (battle.turnOrder || []).forEach(turn => {
+    const member = getPartyMember(turn.id);
+    if (!member) return;
+    const active = currentTurn && currentTurn.id === turn.id;
+    const dead = member.currentHP <= 0;
+    html += '<div class="turn-chip ' + (active ? 'active ' : '') + (dead ? 'dead' : '') + '">' +
+      String(member.name || '').slice(0, 8) + '</div>';
+  });
+  html += '<div class="turn-chip turn-chip-boss">' + String(boss.name || 'Boss').slice(0, 8) + '</div>';
+  html += '</div>';
+
   // Boss section
-  html += '<div class="boss-section">';
+  html += '<div class="boss-section v2-boss">';
   const bossArt = getBossArt(battle.chapterId);
   html += '<div class="boss-avatar">' +
     safeImage(bossArt, boss.name, 'boss-portrait', boss.icon) +
@@ -4091,53 +4131,58 @@ function renderBattle() {
   html += '<div style="font-size:0.8rem;color:var(--parchment-dark);margin-top:8px;">' + phase.desc + '</div>';
   html += '</div>';
 
-  // Party battle grid
+  // Party cards
   html += '<div class="party-battle-grid">';
   gameState.party.filter(p => p.active).forEach(p => {
-    const hpPercent = (p.currentHP / p.stats.maxHP) * 100;
-    const mpPercent = (p.currentMP / p.stats.maxMP) * 100;
+    const hp = Math.max(0, Number(p.currentHP) || 0);
+    const mp = Math.max(0, Number(p.currentMP) || 0);
+    const hpPercent = Math.max(0, Math.min(100, (hp / p.stats.maxHP) * 100));
+    const mpPercent = Math.max(0, Math.min(100, (mp / p.stats.maxMP) * 100));
     const isCurrent = currentTurn && currentTurn.id === p.id;
-    const isDead = p.currentHP <= 0;
+    const isDead = hp <= 0;
     html += '<div class="battle-member ' + (isCurrent ? 'active-turn' : '') + ' ' + (isDead ? 'dead' : '') + '">';
-    const partyArt = getPartyArt(p);
     html += '<div class="battle-member-avatar">' +
-      safeImage(partyArt, p.name + ' portrait', 'battle-portrait', p.icon) +
+      safeImage(getPartyArt(p), p.name + ' portrait', 'battle-portrait', p.icon) +
       '</div>';
     html += '<div class="battle-member-name">' + p.name + '</div>';
     html += '<div class="battle-member-role">' + p.role + '</div>';
     html += '<div class="battle-hp-bar"><div class="battle-hp-fill" style="width:' + hpPercent + '%"></div></div>';
-    html += '<div class="battle-hp-text">HP: ' + p.currentHP + '/' + p.stats.maxHP + '</div>';
+    html += '<div class="battle-hp-text">HP: ' + hp + '/' + p.stats.maxHP + '</div>';
     html += '<div class="battle-mp-bar"><div class="battle-mp-fill" style="width:' + mpPercent + '%"></div></div>';
-    html += '<div class="battle-mp-text">MP: ' + p.currentMP + '/' + p.stats.maxMP + '</div>';
+    html += '<div class="battle-mp-text">MP: ' + mp + '/' + p.stats.maxMP + '</div>';
     html += '</div>';
   });
   html += '</div>';
 
-  // Battle actions (only for San's turn)
+  // Player actions
   if (battle.active && currentMember && currentMember.id === 'san' && !gameState.battleInputLocked) {
-    const san = getPartyMember('san');
     html += '<div class="battle-actions">';
-    html += '<button class="battle-action-btn attack" onclick="playerAction(\'attack\')">⚔️ Attack</button>';
-    html += '<button class="battle-action-btn skill" onclick="playerAction(\'skill\', 2)">✨ Memory Surge</button>';
-    html += '<button class="battle-action-btn skill" onclick="playerAction(\'skill\', 3)">💥 Arcane Blast</button>';
-    html += '<button class="battle-action-btn defend" onclick="playerAction(\'defend\')">🛡️ Defend</button>';
+    html += '<button class="battle-action-btn attack" onclick="playerAction(\'attack\')"><span class="battle-action-label">Attack</span><span class="battle-action-sub">Basic attack</span></button>';
+    html += '<button class="battle-action-btn skill" onclick="playerAction(\'skill\', 2)"><span class="battle-action-label">Memory Surge</span><span class="battle-action-sub">Skill</span></button>';
+    html += '<button class="battle-action-btn skill" onclick="playerAction(\'skill\', 3)"><span class="battle-action-label">Arcane Blast</span><span class="battle-action-sub">Skill</span></button>';
+    html += '<button class="battle-action-btn defend" onclick="playerAction(\'defend\')"><span class="battle-action-label">Defend</span><span class="battle-action-sub">Reduce damage</span></button>';
     html += '</div>';
   } else if (battle.active && currentMember && gameState.battleInputLocked) {
     html += '<div class="battle-turn-status">⚔️ ' + currentMember.name + ' takes their turn.</div>';
   }
 
-  // Combat narrative — one short line describing the latest action.
+  // Compact latest-result display. The underlying full log remains below.
+  const latest = Array.isArray(battle.log) && battle.log.length ? battle.log[battle.log.length - 1] : null;
+  if (latest && latest.message) {
+    html += '<div class="battle-result-strip"><strong>Combat</strong> · ' +
+      String(latest.message).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') +
+      '</div>';
+  }
+
   html += '<div class="battle-turn-narrative" id="battleTurnNarrative">' +
     (battle.narrative || 'The battle begins...') + '</div>';
 
-  // Combat log
   html += '<div class="combat-log" id="combatLog">';
-  battle.log.forEach(entry => {
+  (battle.log || []).forEach(entry => {
     html += '<div class="combat-log-entry ' + entry.type + '">' + entry.message + '</div>';
   });
   html += '</div>';
 
-  // Battle result
   if (!battle.active) {
     if (battle.winner === 'party') {
       html += '<div style="text-align:center;margin-top:20px;">';
