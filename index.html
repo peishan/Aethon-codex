@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.33 — San Combat Spells)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.34 — San Spell UI)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -4299,6 +4299,26 @@ function sanSpellById(id) {
 
 
 
+
+function mountSanSpellUIV1() {
+  const san = (gameState.party || []).find(p => p.id === 'san');
+  if (!san) return;
+
+  // Prefer an explicitly marked San action area if present.
+  let container = document.querySelector('[data-san-actions]');
+  if (!container) {
+    // Otherwise find the existing combat action area containing San's name.
+    const candidates = Array.from(document.querySelectorAll(
+      '#combat-screen .actions, #combat-screen .action-buttons, .combat-actions, .action-buttons, .battle-actions'
+    ));
+    container = candidates[0] || null;
+  }
+  if (!container) return;
+
+  container.setAttribute('data-san-actions', 'true');
+  renderSanSpellButtonsV1(container);
+}
+
 function renderSanSpellButtonsV1(container) {
   if (!container) return;
   const spells = getSanPreparedSpellDataV1();
@@ -4310,9 +4330,9 @@ function renderSanSpellButtonsV1(container) {
     button.type = 'button';
     button.innerHTML = '<span>' + spell.emoji + '</span> <strong>' +
       spell.name + '</strong> <small>' + spell.mp + ' MP</small>';
+    button.disabled = Number((gameState.party || []).find(p => p.id === 'san')?.currentMP || 0) < spell.mp;
     button.addEventListener('click', () => {
-      castSanSpellV1(spell.id);
-      renderSanSpellButtonsV1(container);
+      if (castSanSpellV1(spell.id)) renderSanSpellButtonsV1(container);
     });
     container.appendChild(button);
   });
@@ -4373,6 +4393,7 @@ function castSanSpellV1(spellId, targetId) {
 }
 function aiAction(member) {
   initializeSanSpellbookV1();
+  mountSanSpellUIV1();
   const battle = gameState.battleState;
   if (!battle || !battle.active || !member) return;
   const boss = battle.boss;
