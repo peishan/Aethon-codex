@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.41 — Mezstorm Lightning Combat</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.42 — Mezstorm AI Fix</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -4543,6 +4543,30 @@ function aiAction(member) {
     }
   }
 
+  if (member.id === 'mezstorm') {
+    initializeMezstormSpellbookV1();
+    const lightning = mezstormSpellById('lightning_bolt');
+    if (lightning && member.currentMP >= lightning.mp) {
+      spendMP('mezstorm', lightning.mp);
+      const effectiveMez = codexEffectiveStats('mezstorm', member.stats || {});
+      const magMod = getModifier(effectiveMez.magic);
+      const roll = rollDie(20);
+      const total = roll + magMod;
+      if (roll === 20) {
+        const dmg = Math.max(1, Math.floor(Number(effectiveMez.magic || 10) * lightning.power)) * 2;
+        boss.hp = Math.max(boss.hp - dmg, 0);
+        addCombatLog('CRITICAL! ⚡ Mezstorm casts Lightning Bolt for ' + dmg + ' damage!', 'crit');
+      } else if (total >= boss.ac) {
+        const dmg = Math.max(1, Math.floor(Number(effectiveMez.magic || 10) * lightning.power));
+        boss.hp = Math.max(boss.hp - dmg, 0);
+        addCombatLog('⚡ Mezstorm casts Lightning Bolt for ' + dmg + ' damage!', 'damage');
+      } else {
+        addCombatLog("Mezstorm's Lightning Bolt misses!", 'info');
+      }
+      return;
+    }
+  }
+
   const effectiveMember = codexEffectiveStats(member.id, member.stats);
   const atkMod = getModifier(effectiveMember.atk);
   const roll = rollDie(20);
@@ -5001,16 +5025,6 @@ function renderBattle() {
   if (battle.active && currentMember && currentMember.id === 'san' && !gameState.battleInputLocked) {
     html += '<div class="battle-actions">';
     html += '<button class="battle-action-btn attack" onclick="playerAction(\'attack\')"><span class="battle-action-icon">⚔️</span><span class="battle-action-label">Attack</span><span class="battle-action-sub">Basic attack</span></button>';
-    if (member && member.id === 'mezstorm') {
-      initializeMezstormSpellbookV1();
-      const mezSpellsV141 = getMezstormPreparedSpellDataV1();
-      mezSpellsV141.forEach(function(spell) {
-                html += '<button class="battle-action-btn skill mezstorm-spell-v1" onclick="playerAction(\'mezSpell\', \'' + spell.id + '\')">' +
-          '<span class="battle-action-icon">' + spell.emoji +
-          '</span><span class="battle-action-label">' + spell.name +
-          '</span><span class="battle-action-sub">' + spell.mp + ' MP</span></button>';
-      });
-    }
 
     // San's prepared Codex spells occupy the existing compact action area.
     initializeSanSpellbookV1();
@@ -6118,5 +6132,5 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.41</div></body>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.42</div></body>
 </html>
