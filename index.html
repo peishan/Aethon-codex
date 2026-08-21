@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.21)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.22)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -1071,6 +1071,31 @@ body {
   .turn-chip{min-width:42px}
   .battle-result-strip{font-size:.8rem}
 }
+
+/* v12.22 — Compact mobile combat UI */
+.party-battle-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px!important;margin:8px 0!important}
+.battle-member{display:grid!important;grid-template-columns:34px 1fr;grid-template-rows:auto auto auto auto;column-gap:7px;align-items:center;padding:5px 7px!important;min-height:54px!important}
+.battle-member-avatar{grid-row:1 / span 4;width:34px!important;height:42px!important;margin:0!important}
+.battle-member-avatar img{width:34px!important;height:42px!important;object-fit:cover!important}
+.battle-member-name{font-size:.73rem!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.battle-member-role{font-size:.58rem!important;opacity:.68}
+.battle-hp-bar,.battle-mp-bar{height:4px!important;margin:1px 0!important}
+.battle-hp-text,.battle-mp-text{font-size:.54rem!important;line-height:1.05}
+.battle-turn-order{padding:4px 1px 6px!important;margin-bottom:4px!important}
+.turn-chip{min-width:39px!important;padding:3px 4px!important;font-size:.58rem!important}
+.boss-section.v2-boss{padding:10px!important;margin-bottom:7px!important}
+.boss-section.v2-boss .boss-avatar{max-height:150px!important}
+.boss-section.v2-boss .boss-avatar img{max-height:150px!important;object-fit:contain}
+.boss-section.v2-boss .boss-name{font-size:1rem!important}
+.battle-result-strip{margin:6px 0!important;padding:6px 8px!important;font-size:.72rem!important}
+.battle-turn-narrative{font-size:.7rem!important;margin:5px 0!important}
+.combat-log{max-height:125px!important;overflow-y:auto!important;font-size:.66rem!important;padding:5px!important}
+.combat-log-entry{padding:2px 0!important}
+.battle-actions{display:grid!important;grid-template-columns:repeat(4,1fr);gap:5px!important}
+.battle-action-btn{min-height:42px!important;padding:4px!important}
+.battle-action-label{font-size:.62rem!important}
+.battle-action-sub{font-size:.5rem!important}
+@media(max-width:380px){.party-battle-grid{grid-template-columns:1fr!important}.battle-actions{grid-template-columns:repeat(2,1fr)!important}}
 </style>
 <!--
 AETHON CODEX ART MANIFEST
@@ -3730,6 +3755,27 @@ function updateBossPhase() {
     addCombatLog('=== ' + battle.boss.name + ' enters ' + phase.name + ' Phase! ===', 'phase');
     addCombatLog(phase.desc, 'info');
   }
+}
+
+
+function chooseCompanionSkill(member, battle) {
+  if (!member || member.currentHP <= 0) return 'attack';
+  const mp = Number(member.currentMP || 0);
+  const hpRatio = Number(member.currentHP || 0) / Number(member.stats?.maxHP || 1);
+  const bossRatio = battle?.boss ? Number(battle.boss.hp || 0) / Number(battle.boss.maxHP || 1) : 1;
+
+  if (member.id === 'zaki') {
+    if (mp >= 15 && hpRatio < 0.45 && !member._ironWillUsedThisRound) {
+      member._ironWillUsedThisRound = true;
+      return 'iron_will';
+    }
+    if (mp >= 15 && !battle._battleCryUsed && bossRatio > 0.45) {
+      battle._battleCryUsed = true;
+      return 'battle_cry';
+    }
+    if (mp >= 20 && (bossRatio < 0.55 || Math.random() < 0.22)) return 'vanguard_charge';
+  }
+  return 'attack';
 }
 
 function aiAction(member) {
