@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.47 — Save Recovery</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.48 — Save System Stable</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -1451,9 +1451,9 @@ Add/update paths only in ART_ASSETS above.
       <button class="nav-tab" data-tab="battle" onclick="switchTab('battle')" id="battleNavTab">Battle</button>
     </nav>
     <div class="save-controls">
-      <button class="save-btn flashy" onclick="saveAndVerifyV147()" title="Save your current journey and verify it">💾 Save</button>
-      <button class="save-btn" onclick="loadLocalSaveV147()" title="Load the saved journey from this browser">📥 Load</button>
-      <button class="save-btn" onclick="exportSave()" title="Download a JSON backup">📦 Backup</button>
+      <button class="save-btn flashy" onclick="saveAndVerifyV148()" title="Save your current journey and verify it">💾 Save</button>
+      <button class="save-btn" onclick="loadLocalSaveV148()" title="Load the saved journey from this browser">📥 Load</button>
+      <button class="save-btn" onclick="exportSaveV148()" title="Download a JSON backup">📦 Backup</button>
       <input type="file" id="importSaveInput" accept="application/json,.json" style="display:none" onchange="importSave(event)">
     </div>
   </header>
@@ -1628,6 +1628,120 @@ Add/update paths only in ART_ASSETS above.
 </div>
 
 <script>
+/* SAVE_SYSTEM_V148 */
+const RECOVERY_SAVE_KEY_V148 = 'aethonCodexSaveRecoveryV148';
+const SAVE_SLOT_KEY_V148 = 'aethonCodexSaveSlotV148';
+
+function readSaveRecordV148(key) {
+  try {
+    const raw=localStorage.getItem(key);
+    if(!raw) return null;
+    const data=JSON.parse(raw);
+    return (data && data.gameState && typeof data.gameState==='object') ? data : null;
+  } catch(e) { return null; }
+}
+function writeSaveRecordV148(key,data) {
+  const raw=JSON.stringify(data);
+  localStorage.setItem(key,raw);
+  return localStorage.getItem(key)===raw;
+}
+function currentSaveRecordV148() { return readSaveRecordV148(SAVE_KEY); }
+function saveGameV148() {
+  try {
+    const old=currentSaveRecordV148();
+    if(old) writeSaveRecordV148(RECOVERY_SAVE_KEY_V148,old);
+    const payload=getSavePayload();
+    if(!writeSaveRecordV148(SAVE_KEY,payload)) throw new Error('Primary save verification failed');
+    // Keep a second independent browser slot as a rolling recovery copy.
+    writeSaveRecordV148(SAVE_SLOT_KEY_V148,payload);
+    return true;
+  } catch(e) {
+    console.warn('Save failed:',e);
+    return false;
+  }
+}
+function applyRecordV148(data) {
+  if(!data || !data.gameState) return false;
+  return !!applySaveData(data);
+}
+function loadLocalSaveV148() {
+  const data=currentSaveRecordV148();
+  if(!data) {
+    alert('No saved journey is available in this browser.');
+    return false;
+  }
+  if(!applyRecordV148(data)) {
+    alert('The saved journey could not be loaded. Your save was not changed.');
+    return false;
+  }
+  beginGame();
+  showNotification('Saved journey loaded');
+  return true;
+}
+function loadRecoverySaveV148() {
+  const data=readSaveRecordV148(RECOVERY_SAVE_KEY_V148) || readSaveRecordV148(SAVE_SLOT_KEY_V148);
+  if(!data) { alert('No recovery save is available.'); return false; }
+  if(!applyRecordV148(data)) { alert('The recovery save could not be loaded.'); return false; }
+  // Restore it to primary only after successful validation/application.
+  writeSaveRecordV148(SAVE_KEY,data);
+  beginGame();
+  showNotification('Recovery save loaded');
+  return true;
+}
+function continueSavedGameV148() { return loadLocalSaveV148(); }
+function startNewGameV148() {
+  const existing=currentSaveRecordV148();
+  if(existing) {
+    const ok=confirm('Start a new game? Your current saved journey will be kept as a recovery save.');
+    if(!ok) return false;
+    writeSaveRecordV148(RECOVERY_SAVE_KEY_V148,existing);
+  }
+  // Never delete the existing primary save here. The old save remains recoverable
+  // until a new game is explicitly saved.
+  gameState = createInitialGameState();
+  beginGame();
+  showNotification('New game started — your previous save is kept as recovery');
+  return true;
+}
+function saveAndVerifyV148() {
+  if(!saveGameV148()) { alert('Save failed. Your previous save was not intentionally removed.'); return false; }
+  const s=gameState||{};
+  alert('Save verified — Level '+(s.level??1)+' · '+(Array.isArray(s.activeQuests)?s.activeQuests.length:0)+' active quests');
+  return true;
+}
+function exportSaveV148() {
+  const payload=getSavePayload();
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download='aethon-codex-save-'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  showNotification('Backup downloaded');
+}
+function importSaveV148(event) {
+  const file=event.target.files&&event.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try {
+      const data=JSON.parse(reader.result);
+      if(!data || !data.gameState) throw new Error('Not an Aethon Codex save');
+      const old=currentSaveRecordV148(); if(old) writeSaveRecordV148(RECOVERY_SAVE_KEY_V148,old);
+      if(!applyRecordV148(data)) throw new Error('Save data could not be applied');
+      if(!writeSaveRecordV148(SAVE_KEY,data)) throw new Error('Save verification failed');
+      writeSaveRecordV148(SAVE_SLOT_KEY_V148,data);
+      beginGame(); showNotification('Backup imported successfully');
+    } catch(e) { alert('That backup could not be imported. Your existing save was not changed.'); console.warn(e); }
+    event.target.value='';
+  };
+  reader.readAsText(file);
+}
+function saveStatusV148() {
+  const d=currentSaveRecordV148();
+  if(!d) return {exists:false,valid:false};
+  const s=d.gameState;
+  return {exists:true,valid:true,version:d.version??null,level:s.level??null,book:s.currentBook??null,
+    activeQuests:Array.isArray(s.activeQuests)?s.activeQuests.length:0,
+    completedQuests:Array.isArray(s.completedQuests)?s.completedQuests.length:0};
+}
 /* SAVE_RECOVERY_V147 */
 const RECOVERY_SAVE_KEY_V147 = 'aethonCodexSaveRecovery';
 
@@ -3792,9 +3906,7 @@ function getSavePayload() {
   };
 }
 
-function saveGame() {
-  return saveGameV147();
-}
+function saveGame() { return saveGameV148(); }
 
 function applySaveData(data) {
   if (!data || !data.gameState) return false;
@@ -3954,13 +4066,9 @@ function loadGameFromStorage() {
   }
 }
 
-function continueSavedGame() {
-  return loadLocalSaveV147();
-}
+function continueSavedGame() { return continueSavedGameV148(); }
 
-function startNewGame() {
-  return startNewGameV147();
-}
+function startNewGame() { return startNewGameV148(); }
 
 function exportSave() {
   const payload = getSavePayload();
@@ -3977,33 +4085,7 @@ function exportSave() {
   showNotification('Save downloaded');
 }
 
-function importSave(event) {
-  const file = event.target.files && event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const data = JSON.parse(reader.result);
-      if (!applySaveData(data)) {
-        alert('That file doesn\'t look like a valid Aethon Codex save.');
-        return;
-      }
-      saveGame();
-      const inGame = document.getElementById('gameContainer').classList.contains('active');
-      if (!inGame) {
-        beginGame();
-      } else {
-        updateUI();
-        renderParty();
-      }
-      showNotification('Save loaded');
-    } catch (e) {
-      alert('Could not read that save file. It may be corrupted or not JSON.');
-    }
-    event.target.value = '';
-  };
-  reader.readAsText(file);
-}
+function importSave(event) { return importSaveV148(event); }
 
 // ============================================================
 // UTILITY FUNCTIONS
@@ -6317,14 +6399,14 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.47</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.48</div>
 <div id="save-tools-v146" style="margin:12px auto;max-width:680px;padding:10px;border:1px solid rgba(210,170,70,.45);border-radius:10px;background:rgba(5,15,25,.8);text-align:center;">
   <div style="font-family:serif;letter-spacing:1px;margin-bottom:7px;">SAVE MANAGEMENT</div>
   <button type="button" onclick="saveLocalAndVerifyV146()">💾 Save & Verify</button>
-  <button type="button" onclick="loadLocalSaveV146()">📥 Load Local Save</button><button type="button" onclick="loadRecoverySaveV147()">🛟 Recovery Save</button>
+  <button type="button" onclick="loadLocalSaveV146()">📥 Load Local Save</button><button type="button" onclick="loadRecoverySaveV148()">🛟 Recovery Save</button>
   <button type="button" onclick="if(typeof exportSave==='function') exportSave(); else if(typeof saveGame==='function') saveGame();">📦 Export Backup</button>
   <label style="display:inline-block;margin:4px;">
-    <input type="file" accept=".json,application/json" onchange="if(typeof importSave==='function'){importSave(event);}else{alert('Backup import is unavailable in this build.');}">
+    <input type="file" accept=".json,application/json" onchange="importSaveV148(event)">
     Import Backup
   </label>
   <div style="font-size:11px;opacity:.75;margin-top:6px;">Load Local Save restores the browser save. Import Backup is only for a downloaded JSON file.</div>
