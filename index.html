@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.25)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.26)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -4052,10 +4052,67 @@ function companionAIAction(member, battle) {
   return {type:'attack'};
 }
 
+
+function executeCompanionSkill(member, skill, battle) {
+  if (!member || !battle || !battle.active) return false;
+  const boss = battle.boss;
+  const spend = (amount) => {
+    member.currentMP = Math.max(0, Number(member.currentMP || 0) - amount);
+  };
+
+  if (member.id !== 'zaki') return false;
+
+  if (skill === 'battle_cry' && member.currentMP >= 15) {
+    spend(15);
+    gameState.party.filter(p => p.active && p.currentHP > 0).forEach(p => {
+      p._battleCryBonus = 3;
+    });
+    addCombatLog('📢 ' + member.name + ' uses Battle Cry!', 'skill');
+    addCombatLog('Party ATK +3 for 2 turns!', 'info');
+    battle.narrative = member.name + ' rallies the party!';
+    return true;
+  }
+
+  if (skill === 'iron_will' && member.currentMP >= 15) {
+    spend(15);
+    member._defBonus = 4;
+    addCombatLog('🛡️ ' + member.name + ' uses Iron Will!', 'skill');
+    addCombatLog(member.name + ' DEF +4!', 'info');
+    battle.narrative = member.name + ' braces for the incoming attack.';
+    return true;
+  }
+
+  if (skill === 'vanguard_charge' && member.currentMP >= 20) {
+    spend(20);
+    const effective = codexEffectiveStats(member.id, member.stats);
+    const atkMod = getModifier(effective.atk);
+    const roll = rollDie(20);
+    let dmg;
+    if (roll === 20) {
+      dmg = rollDice(3,10) * 2 + codexCombatAttackBonus(member.id);
+      addCombatLog('🐎 ' + member.name + ' uses Vanguard Charge — CRITICAL ' + dmg + ' damage!', 'crit');
+    } else {
+      dmg = Math.max(1, rollDice(3,10) + atkMod);
+      addCombatLog('🐎 ' + member.name + ' uses Vanguard Charge — ' + dmg + ' damage!', 'damage');
+    }
+    boss.hp = Math.max(0, boss.hp - dmg);
+    battle.narrative = member.name + ' charges through the enemy line!';
+    return true;
+  }
+
+  return false;
+}
+
 function aiAction(member) {
   const battle = gameState.battleState;
   if (!battle || !battle.active || !member) return;
   const boss = battle.boss;
+
+  // Companion AI decision layer. Zaki is the first fully skill-aware companion.
+  const decision = companionAIAction(member, battle);
+  if (decision && decision.type === 'skill' && executeCompanionSkill(member, decision.skill, battle)) {
+    return;
+  }
 
   const narrativeByRole = {
     senedra: member.name + ' releases a rapid volley of arrows!',
