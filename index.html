@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.42 — Mezstorm AI Fix</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.43 — Thunder Strike</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -4545,23 +4545,29 @@ function aiAction(member) {
 
   if (member.id === 'mezstorm') {
     initializeMezstormSpellbookV1();
+    const mezLevel = Number(gameState.level || 1);
+    const thunder = mezstormSpellById('thunder_strike');
     const lightning = mezstormSpellById('lightning_bolt');
-    if (lightning && member.currentMP >= lightning.mp) {
-      spendMP('mezstorm', lightning.mp);
+    const stormSpell = (mezLevel >= 3 && thunder && member.currentMP >= thunder.mp)
+      ? thunder
+      : lightning;
+
+    if (stormSpell && member.currentMP >= stormSpell.mp) {
+      spendMP('mezstorm', stormSpell.mp);
       const effectiveMez = codexEffectiveStats('mezstorm', member.stats || {});
       const magMod = getModifier(effectiveMez.magic);
       const roll = rollDie(20);
       const total = roll + magMod;
       if (roll === 20) {
-        const dmg = Math.max(1, Math.floor(Number(effectiveMez.magic || 10) * lightning.power)) * 2;
+        const dmg = Math.max(1, Math.floor(Number(effectiveMez.magic || 10) * stormSpell.power)) * 2;
         boss.hp = Math.max(boss.hp - dmg, 0);
-        addCombatLog('CRITICAL! ⚡ Mezstorm casts Lightning Bolt for ' + dmg + ' damage!', 'crit');
+        addCombatLog('CRITICAL! ' + stormSpell.emoji + ' Mezstorm casts ' + stormSpell.name + ' for ' + dmg + ' damage!', 'crit');
       } else if (total >= boss.ac) {
-        const dmg = Math.max(1, Math.floor(Number(effectiveMez.magic || 10) * lightning.power));
+        const dmg = Math.max(1, Math.floor(Number(effectiveMez.magic || 10) * stormSpell.power));
         boss.hp = Math.max(boss.hp - dmg, 0);
-        addCombatLog('⚡ Mezstorm casts Lightning Bolt for ' + dmg + ' damage!', 'damage');
+        addCombatLog(stormSpell.emoji + ' Mezstorm casts ' + stormSpell.name + ' for ' + dmg + ' damage!', 'damage');
       } else {
-        addCombatLog("Mezstorm's Lightning Bolt misses!", 'info');
+        addCombatLog("Mezstorm's " + stormSpell.name + ' misses!', 'info');
       }
       return;
     }
@@ -6132,5 +6138,5 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.42</div></body>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.43</div></body>
 </html>
