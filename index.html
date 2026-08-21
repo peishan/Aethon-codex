@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.38 — San Level Progression)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.39 — San Higher Spell Progression)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -1652,6 +1652,22 @@ const SAN_SPELLBOOK_V1 = {
   10: [
     { id:'daybreak', name:'Daybreak', emoji:'🌟', mp:35, power:2.25,
       type:'single', description:'San’s first major milestone spell.' }
+  ],
+  12: [
+    { id:'astral_lance', name:'Astral Lance', emoji:'☄️', mp:40, power:2.55,
+      type:'single', description:'A concentrated lance of astral force.' }
+  ],
+  15: [
+    { id:'veil_breaker', name:'Veil Breaker', emoji:'🌀', mp:45, power:2.80,
+      type:'single', description:'Strikes through layered magical defenses.' }
+  ],
+  18: [
+    { id:'starfall', name:'Starfall', emoji:'🌠', mp:55, power:3.10,
+      type:'single', description:'Calls down a devastating fragment of the stars.' }
+  ],
+  20: [
+    { id:'aethon_apex', name:'Aethon Apex', emoji:'👑', mp:70, power:3.60,
+      type:'single', description:'A high-level expression of San’s arcane mastery.' }
   ]
 };
 
@@ -4310,12 +4326,20 @@ function initializeSanSpellbookV1() {
     // Preserve the player's current prepared choices, then fill open slots
     // with newly unlocked spells.
     san.preparedSpells = san.preparedSpells.filter(id => known.some(s => s.id === id));
-    known.forEach(spell => {
-      if (san.preparedSpells.length < 4 &&
-          !san.preparedSpells.includes(spell.id)) {
-        san.preparedSpells.push(spell.id);
-      }
-    });
+
+    // At higher levels, keep the compact UI focused on San's newest tools.
+    // This is intentionally automatic for the ADHD-friendly hands-off flow;
+    // a full manual spellbook/selection screen can be added later.
+    if (known.length > 4) {
+      san.preparedSpells = known.slice(-4).map(s => s.id);
+    } else {
+      known.forEach(spell => {
+        if (san.preparedSpells.length < 4 &&
+            !san.preparedSpells.includes(spell.id)) {
+          san.preparedSpells.push(spell.id);
+        }
+      });
+    }
   }
 }
 
