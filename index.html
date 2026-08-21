@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.32 — San Spell System)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.33 — San Combat Spells)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -4295,6 +4295,81 @@ function initializeSanSpellbookV1() {
 function sanSpellById(id) {
   const all = Object.values(SAN_SPELLBOOK_V1).flat();
   return all.find(s => s.id === id) || null;
+}
+
+
+
+function renderSanSpellButtonsV1(container) {
+  if (!container) return;
+  const spells = getSanPreparedSpellDataV1();
+  container.querySelectorAll('.san-spell-v1').forEach(el => el.remove());
+
+  spells.forEach(spell => {
+    const button = document.createElement('button');
+    button.className = 'san-spell-v1';
+    button.type = 'button';
+    button.innerHTML = '<span>' + spell.emoji + '</span> <strong>' +
+      spell.name + '</strong> <small>' + spell.mp + ' MP</small>';
+    button.addEventListener('click', () => {
+      castSanSpellV1(spell.id);
+      renderSanSpellButtonsV1(container);
+    });
+    container.appendChild(button);
+  });
+}
+
+function getSanPreparedSpellDataV1() {
+  const san = (gameState.party || []).find(p => p.id === 'san');
+  if (!san) return [];
+  initializeSanSpellbookV1();
+  return (san.preparedSpells || [])
+    .map(id => sanSpellById(id))
+    .filter(Boolean);
+}
+
+function castSanSpellV1(spellId, targetId) {
+  const san = (gameState.party || []).find(p => p.id === 'san');
+  const battle = gameState.battleState;
+  const spell = sanSpellById(spellId);
+
+  if (!san || !battle || !spell) return false;
+  if (Number(san.currentMP || 0) < Number(spell.mp || 0)) {
+    addCombatLog('Not enough MP for ' + spell.name + '!', 'info');
+    return false;
+  }
+
+  const target = targetId
+    ? (gameState.party || []).find(p => p.id === targetId)
+    : null;
+
+  san.currentMP = Math.max(0, Number(san.currentMP || 0) - Number(spell.mp || 0));
+
+  if (spell.type === 'defensive') {
+    san._arcaneWardTurns = 2;
+    addCombatLog(spell.emoji + ' ' + spell.name + ' — San is protected!', 'skill');
+    battle.narrative = 'San casts ' + spell.name + '!';
+    return true;
+  }
+
+  // Use the existing battle damage function where available.
+  // The exact boss object varies by build, so resolve the active enemy safely.
+  const boss = battle.boss || battle.enemy || gameState.boss;
+  if (!boss) return false;
+
+  const attackPower = Number(san.stats?.magicPower || san.stats?.magic || san.stats?.attack || 20);
+  const damage = Math.max(1, Math.floor(attackPower * Number(spell.power || 1)));
+
+  if (typeof damageBoss === 'function') {
+    damageBoss(damage);
+  } else if (typeof dealDamageToBoss === 'function') {
+    dealDamageToBoss(damage);
+  } else if ('hp' in boss) {
+    boss.hp = Math.max(0, Number(boss.hp || 0) - damage);
+  }
+
+  addCombatLog(spell.emoji + ' ' + spell.name + ' — ' + damage + ' damage!', 'skill');
+  battle.narrative = 'San casts ' + spell.name + '!';
+  return true;
 }
 function aiAction(member) {
   initializeSanSpellbookV1();
