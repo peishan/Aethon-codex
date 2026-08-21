@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.23)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.24)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -1315,6 +1315,32 @@ body {
   .boss-section.v2-boss{grid-template-columns:64px 1fr!important}
   .boss-section.v2-boss .boss-avatar{width:64px!important;height:76px!important}
   .battle-action-label{font-size:.52rem!important}
+}
+
+
+/* v12.24 — San action buttons: larger, bold, emoji-assisted */
+.battle-actions .battle-action-btn{
+  min-height:46px!important;
+  padding:5px 3px!important;
+}
+.battle-actions .battle-action-label{
+  font-size:.68rem!important;
+  font-weight:800!important;
+  line-height:1.05!important;
+}
+.battle-actions .battle-action-sub{
+  font-size:.44rem!important;
+  opacity:.78!important;
+}
+.battle-actions .battle-action-icon{
+  display:block!important;
+  font-size:1.05rem!important;
+  line-height:1!important;
+  margin-bottom:2px!important;
+}
+@media(max-width:380px){
+  .battle-actions .battle-action-label{font-size:.62rem!important}
+  .battle-actions .battle-action-icon{font-size:.95rem!important}
 }
 
 </style>
@@ -4428,10 +4454,10 @@ function renderBattle() {
   // Player actions
   if (battle.active && currentMember && currentMember.id === 'san' && !gameState.battleInputLocked) {
     html += '<div class="battle-actions">';
-    html += '<button class="battle-action-btn attack" onclick="playerAction(\'attack\')"><span class="battle-action-label">Attack</span><span class="battle-action-sub">Basic attack</span></button>';
-    html += '<button class="battle-action-btn skill" onclick="playerAction(\'skill\', 2)"><span class="battle-action-label">Memory Surge</span><span class="battle-action-sub">Skill</span></button>';
-    html += '<button class="battle-action-btn skill" onclick="playerAction(\'skill\', 3)"><span class="battle-action-label">Arcane Blast</span><span class="battle-action-sub">Skill</span></button>';
-    html += '<button class="battle-action-btn defend" onclick="playerAction(\'defend\')"><span class="battle-action-label">Defend</span><span class="battle-action-sub">Reduce damage</span></button>';
+    html += '<button class="battle-action-btn attack" onclick="playerAction(\'attack\')"><span class="battle-action-icon">⚔️</span><span class="battle-action-label">Attack</span><span class="battle-action-sub">Basic attack</span></button>';
+    html += '<button class="battle-action-btn skill" onclick="playerAction(\'skill\', 2)"><span class="battle-action-icon">✨</span><span class="battle-action-label">Memory Surge</span><span class="battle-action-sub">Skill</span></button>';
+    html += '<button class="battle-action-btn skill" onclick="playerAction(\'skill\', 3)"><span class="battle-action-icon">🔮</span><span class="battle-action-label">Arcane Blast</span><span class="battle-action-sub">Skill</span></button>';
+    html += '<button class="battle-action-btn defend" onclick="playerAction(\'defend\')"><span class="battle-action-icon">🛡️</span><span class="battle-action-label">Defend</span><span class="battle-action-sub">Reduce damage</span></button>';
     html += '</div>';
   } else if (battle.active && currentMember && gameState.battleInputLocked) {
     html += '<div class="battle-turn-status">⚔️ ' + currentMember.name + ' takes their turn.</div>';
