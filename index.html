@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.26)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.27)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -4034,11 +4034,13 @@ function chooseCompanionSkill(member, battle) {
 
 function companionAIAction(member, battle) {
   if (!member || !battle || !battle.active || member.currentHP <= 0) return {type:'skip'};
+
   const hpRatio = Number(member.currentHP || 0) / Number(member.stats?.maxHP || 1);
   const mp = Number(member.currentMP || 0);
-  const bossRatio = battle.boss ? Number(battle.boss.hp || 0) / Number(battle.boss.maxHP || 1) : 1;
+  const active = getActiveParty();
 
   if (member.id === 'zaki') {
+    const bossRatio = battle.boss ? Number(battle.boss.hp || 0) / Number(battle.boss.maxHP || 1) : 1;
     if (mp >= 20 && bossRatio <= 0.55) return {type:'skill', skill:'vanguard_charge'};
     if (mp >= 15 && !battle._battleCryUsed && bossRatio > 0.45) {
       battle._battleCryUsed = true;
@@ -4049,6 +4051,23 @@ function companionAIAction(member, battle) {
       return {type:'skill', skill:'iron_will'};
     }
   }
+
+  if (member.id === 'joel') {
+    const lowest = active
+      .filter(p => p.currentHP > 0)
+      .sort((a,b) => (a.currentHP/a.stats.maxHP) - (b.currentHP/b.stats.maxHP))[0];
+
+    if (mp >= 20 && lowest && (lowest.currentHP / lowest.stats.maxHP) <= 0.40 && !battle._divineProtectionUsed) {
+      battle._divineProtectionUsed = true;
+      return {type:'skill', skill:'divine_protection'};
+    }
+
+    if (mp >= 20 && hpRatio <= 0.30 && !battle._divineProtectionUsed) {
+      battle._divineProtectionUsed = true;
+      return {type:'skill', skill:'divine_protection'};
+    }
+  }
+
   return {type:'attack'};
 }
 
@@ -4103,15 +4122,34 @@ function executeCompanionSkill(member, skill, battle) {
   return false;
 }
 
+
+function executeJoelSkill(member, skill, battle) {
+  if (!member || !battle || !battle.active || member.id !== 'joel') return false;
+  if (skill === 'divine_protection' && member.currentMP >= 20) {
+    member.currentMP = Math.max(0, member.currentMP - 20);
+    gameState.party.filter(p => p.active && p.currentHP > 0).forEach(p => {
+      p._divineProtection = 1;
+    });
+    addCombatLog('🛡️ ' + member.name + ' uses Divine Protection!', 'skill');
+    addCombatLog('The party is shielded!', 'info');
+    battle.narrative = member.name + ' raises his shield and protects the party!';
+    return true;
+  }
+  return false;
+}
+
 function aiAction(member) {
   const battle = gameState.battleState;
   if (!battle || !battle.active || !member) return;
   const boss = battle.boss;
 
-  // Companion AI decision layer. Zaki is the first fully skill-aware companion.
+  // Companion AI decision layer.
   const decision = companionAIAction(member, battle);
-  if (decision && decision.type === 'skill' && executeCompanionSkill(member, decision.skill, battle)) {
-    return;
+  if (decision && decision.type === 'skill') {
+    if (typeof executeCompanionSkill === 'function' &&
+        executeCompanionSkill(member, decision.skill, battle)) return;
+    if (typeof executeJoelSkill === 'function' &&
+        executeJoelSkill(member, decision.skill, battle)) return;
   }
 
   const narrativeByRole = {
@@ -4512,7 +4550,7 @@ function renderBattle() {
   html += '<div style="font-size:0.8rem;color:var(--parchment-dark);margin-top:8px;">' + phase.desc + '</div>';
   html += '</div>';
 
-  html += '<div class="companion-ai-strip"><span><strong>Companions</strong> act automatically</span><span class="companion-ai-mode">ASSISTED</span></div>';
+  html += '<div class="companion-ai-strip"><span><strong>Companions</strong> use class AI</span><span class="companion-ai-mode">ASSISTED</span></div>';
 
   // Party cards
   html += '<div class="party-battle-grid">';
