@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.29-fixed)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.30)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -4051,6 +4051,7 @@ function companionAIAction(member, battle) {
   const mp = Number(member.currentMP || 0);
   const active = getActiveParty();
 
+  // Zaki — Fighter.
   if (member.id === 'zaki') {
     const bossRatio = battle.boss ? Number(battle.boss.hp || 0) / Number(battle.boss.maxHP || 1) : 1;
     if (mp >= 20 && bossRatio <= 0.55) return {type:'skill', skill:'vanguard_charge'};
@@ -4064,20 +4065,41 @@ function companionAIAction(member, battle) {
     }
   }
 
+  // Joel — Paladin.
   if (member.id === 'joel') {
     const lowest = active
       .filter(p => p.currentHP > 0)
       .sort((a,b) => (a.currentHP/a.stats.maxHP) - (b.currentHP/b.stats.maxHP))[0];
 
-    // Joel is deliberately proactive: protect before the party reaches critical HP.
     if (mp >= 20 && lowest && (lowest.currentHP / lowest.stats.maxHP) <= 0.60 && !battle._divineProtectionUsed) {
       battle._divineProtectionUsed = true;
       return {type:'skill', skill:'divine_protection'};
     }
-
     if (mp >= 20 && hpRatio <= 0.50 && !battle._divineProtectionUsed) {
       battle._divineProtectionUsed = true;
       return {type:'skill', skill:'divine_protection'};
+    }
+  }
+
+  // Eliz — Healer / Resurrection.
+  if (member.id === 'eliz') {
+    const living = active.filter(p => p.currentHP > 0);
+    const fallen = active.filter(p => p.currentHP <= 0);
+
+    // Resurrection has the highest priority, but only once per battle for now.
+    if (mp >= 30 && fallen.length && !battle._elizResurrectionUsed) {
+      battle._elizResurrectionUsed = true;
+      return {type:'skill', skill:'resurrection'};
+    }
+
+    // Heal the most injured living ally before she attacks.
+    const lowest = living
+      .filter(p => p !== member)
+      .sort((a,b) => (a.currentHP/a.stats.maxHP) - (b.currentHP/b.stats.maxHP))[0];
+
+    if (mp >= 15 && lowest && (lowest.currentHP / lowest.stats.maxHP) <= 0.60 && !battle._elizHealUsedThisRound) {
+      battle._elizHealUsedThisRound = true;
+      return {type:'skill', skill:'heal'};
     }
   }
 
@@ -4151,6 +4173,45 @@ function executeJoelSkill(member, skill, battle) {
   return false;
 }
 
+
+function executeElizSkill(member, skill, battle) {
+  if (!member || !battle || !battle.active || member.id !== 'eliz') return false;
+  const party = gameState.party || [];
+
+  if (skill === 'resurrection' && member.currentMP >= 30) {
+    const target = party.find(p => p.currentHP <= 0);
+    if (!target) return false;
+
+    member.currentMP = Math.max(0, member.currentMP - 30);
+    target.currentHP = Math.max(1, Math.floor((Number(target.stats?.maxHP || 1)) * 0.35));
+    target._justResurrected = true;
+
+    addCombatLog('✨ ' + member.name.toUpperCase() + ' — RESURRECTION!', 'skill');
+    addCombatLog(target.name + ' returns to the battle!', 'info');
+    battle.narrative = member.name + ' calls a fallen ally back to life!';
+    return true;
+  }
+
+  if (skill === 'heal' && member.currentMP >= 15) {
+    const target = party
+      .filter(p => p.currentHP > 0 && p !== member)
+      .sort((a,b) => (a.currentHP/a.stats.maxHP) - (b.currentHP/b.stats.maxHP))[0];
+
+    if (!target) return false;
+
+    member.currentMP = Math.max(0, member.currentMP - 15);
+    const heal = Math.max(1, Math.floor(Number(target.stats?.maxHP || 1) * 0.25));
+    target.currentHP = Math.min(Number(target.stats?.maxHP || 1), target.currentHP + heal);
+
+    addCombatLog('💚 ' + member.name.toUpperCase() + ' — HEAL!', 'skill');
+    addCombatLog(target.name + ' recovers ' + heal + ' HP!', 'info');
+    battle.narrative = member.name + ' restores ' + target.name + '!';
+    return true;
+  }
+
+  return false;
+}
+
 function aiAction(member) {
   const battle = gameState.battleState;
   if (!battle || !battle.active || !member) return;
@@ -4163,6 +4224,8 @@ function aiAction(member) {
         executeCompanionSkill(member, decision.skill, battle)) return;
     if (typeof executeJoelSkill === 'function' &&
         executeJoelSkill(member, decision.skill, battle)) return;
+    if (typeof executeElizSkill === 'function' &&
+        executeElizSkill(member, decision.skill, battle)) return;
   }
 
   const narrativeByRole = {
