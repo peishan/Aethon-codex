@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.45 — Save & Quest Stability</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.46 — Save UI Fix</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -1627,6 +1627,70 @@ Add/update paths only in ART_ASSETS above.
 </div>
 
 <script>
+/* SAVE_UI_V146 */
+function codexSaveStatusV146() {
+  try {
+    const raw = localStorage.getItem('aethonCodexSave');
+    if (!raw) return { exists:false, valid:false };
+    const data = JSON.parse(raw);
+    return {
+      exists:true,
+      valid:true,
+      level:data.level ?? data.playerLevel ?? null,
+      quests:Array.isArray(data.quests) ? data.quests.length :
+             (Array.isArray(data.questLog) ? data.questLog.length : null),
+      chapters:Array.isArray(data.chapters) ? data.chapters.length :
+                (Array.isArray(data.completedChapters) ? data.completedChapters.length : null)
+    };
+  } catch (e) {
+    return { exists:true, valid:false };
+  }
+}
+
+function loadLocalSaveV146() {
+  const status = codexSaveStatusV146();
+  if (!status.exists) {
+    alert('No local save was found on this browser.');
+    return false;
+  }
+  if (!status.valid) {
+    alert('The local save exists but could not be read. Use Import Backup with a verified JSON save.');
+    return false;
+  }
+  try {
+    if (typeof loadGameFromStorage === 'function') {
+      loadGameFromStorage();
+    } else if (typeof loadGame === 'function') {
+      loadGame();
+    } else {
+      throw new Error('No local load function available.');
+    }
+    return true;
+  } catch (e) {
+    alert('Could not load the local save. Your existing save was not overwritten.');
+    return false;
+  }
+}
+
+function saveLocalAndVerifyV146() {
+  try {
+    if (typeof saveGame === 'function') saveGame();
+    const status = codexSaveStatusV146();
+    if (status.valid) {
+      const parts = [];
+      if (status.level != null) parts.push('Level ' + status.level);
+      if (status.quests != null) parts.push(status.quests + ' quests');
+      alert('Save verified' + (parts.length ? ' — ' + parts.join(' · ') : '') + '.');
+      return true;
+    }
+    alert('Save was not verified. No backup was removed.');
+    return false;
+  } catch (e) {
+    alert('Save failed. Your previous save was not intentionally removed.');
+    return false;
+  }
+}
+
 /* SAVE_INTEGRITY_CHECK_V1 */
 function runSaveIntegrityCheckV1() {
   const raw = localStorage.getItem('aethonCodexSave');
@@ -6162,5 +6226,17 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.45</div></body>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.46</div>
+<div id="save-tools-v146" style="margin:12px auto;max-width:680px;padding:10px;border:1px solid rgba(210,170,70,.45);border-radius:10px;background:rgba(5,15,25,.8);text-align:center;">
+  <div style="font-family:serif;letter-spacing:1px;margin-bottom:7px;">SAVE MANAGEMENT</div>
+  <button type="button" onclick="saveLocalAndVerifyV146()">💾 Save & Verify</button>
+  <button type="button" onclick="loadLocalSaveV146()">📥 Load Local Save</button>
+  <button type="button" onclick="if(typeof exportSave==='function') exportSave(); else if(typeof saveGame==='function') saveGame();">📦 Export Backup</button>
+  <label style="display:inline-block;margin:4px;">
+    <input type="file" accept=".json,application/json" onchange="if(typeof importSave==='function'){importSave(event);}else{alert('Backup import is unavailable in this build.');}">
+    Import Backup
+  </label>
+  <div style="font-size:11px;opacity:.75;margin-top:6px;">Load Local Save restores the browser save. Import Backup is only for a downloaded JSON file.</div>
+</div>
+</body>
 </html>
