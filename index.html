@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.27)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.28)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -4057,12 +4057,13 @@ function companionAIAction(member, battle) {
       .filter(p => p.currentHP > 0)
       .sort((a,b) => (a.currentHP/a.stats.maxHP) - (b.currentHP/b.stats.maxHP))[0];
 
-    if (mp >= 20 && lowest && (lowest.currentHP / lowest.stats.maxHP) <= 0.40 && !battle._divineProtectionUsed) {
+    // Joel is deliberately proactive: protect before the party reaches critical HP.
+    if (mp >= 20 && lowest && (lowest.currentHP / lowest.stats.maxHP) <= 0.60 && !battle._divineProtectionUsed) {
       battle._divineProtectionUsed = true;
       return {type:'skill', skill:'divine_protection'};
     }
 
-    if (mp >= 20 && hpRatio <= 0.30 && !battle._divineProtectionUsed) {
+    if (mp >= 20 && hpRatio <= 0.50 && !battle._divineProtectionUsed) {
       battle._divineProtectionUsed = true;
       return {type:'skill', skill:'divine_protection'};
     }
