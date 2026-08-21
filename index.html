@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.34 — San Spell UI)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.35 — San Spell UI Fixed)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -4393,7 +4393,6 @@ function castSanSpellV1(spellId, targetId) {
 }
 function aiAction(member) {
   initializeSanSpellbookV1();
-  mountSanSpellUIV1();
   const battle = gameState.battleState;
   if (!battle || !battle.active || !member) return;
   const boss = battle.boss;
@@ -4667,6 +4666,46 @@ function playerAction(actionType, spellIndex) {
       finishPlayerAction();
     });
 
+  } else if (actionType === 'sanSpell' && spellIndex !== undefined) {
+    const spell = sanSpellById(spellIndex);
+    if (!spell || !spendMP('san', spell.mp || 0)) {
+      gameState.battleInputLocked = false;
+      addCombatLog('Not enough MP!', 'info');
+      renderBattle();
+      return;
+    }
+
+    if (spell.type === 'defensive') {
+      san._arcaneWardTurns = 2;
+      addCombatLog(spell.emoji + ' San casts ' + spell.name + '!', 'skill');
+      finishPlayerAction();
+      return;
+    }
+
+    const effectiveSan = codexEffectiveStats('san', san.stats);
+    const magMod = getModifier(effectiveSan.magic);
+    const roll = rollDie(20);
+    const total = roll + magMod;
+
+    showDice(roll, magMod, total, spell.name, () => {
+      const baseDamage = Math.max(1, Math.floor(
+        Number(effectiveSan.magic || 10) * Number(spell.power || 1)
+      ));
+
+      if (roll === 20) {
+        const dmg = baseDamage * 2;
+        boss.hp = Math.max(boss.hp - dmg, 0);
+        addCombatLog('CRITICAL! ' + spell.emoji + ' San casts ' + spell.name + ' for ' + dmg + ' damage!', 'crit');
+      } else if (total >= boss.ac) {
+        const dmg = baseDamage;
+        boss.hp = Math.max(boss.hp - dmg, 0);
+        addCombatLog(spell.emoji + ' San casts ' + spell.name + ' on ' + boss.name + ' for ' + dmg + ' damage!', 'damage');
+      } else {
+        addCombatLog('San\'s ' + spell.name + ' misses!', 'info');
+      }
+      finishPlayerAction();
+    });
+
   } else if (actionType === 'skill' && spellIndex !== undefined) {
     const spell = san.spells && san.spells[spellIndex];
     if (!spell || !spendMP('san', spell.cost || 0)) {
@@ -4841,8 +4880,18 @@ function renderBattle() {
   if (battle.active && currentMember && currentMember.id === 'san' && !gameState.battleInputLocked) {
     html += '<div class="battle-actions">';
     html += '<button class="battle-action-btn attack" onclick="playerAction(\'attack\')"><span class="battle-action-icon">⚔️</span><span class="battle-action-label">Attack</span><span class="battle-action-sub">Basic attack</span></button>';
-    html += '<button class="battle-action-btn skill" onclick="playerAction(\'skill\', 2)"><span class="battle-action-icon">✨</span><span class="battle-action-label">Memory Surge</span><span class="battle-action-sub">Skill</span></button>';
-    html += '<button class="battle-action-btn skill" onclick="playerAction(\'skill\', 3)"><span class="battle-action-icon">🔮</span><span class="battle-action-label">Arcane Blast</span><span class="battle-action-sub">Skill</span></button>';
+
+    // San's prepared Codex spells occupy the existing compact action area.
+    initializeSanSpellbookV1();
+    const sanPreparedV1 = getSanPreparedSpellDataV1();
+    sanPreparedV1.forEach(function(spell) {
+      html += '<button class="battle-action-btn skill san-spell-v1" onclick="playerAction(\'sanSpell\', \'' +
+        spell.id + '\')">' +
+        '<span class="battle-action-icon">' + spell.emoji + '</span>' +
+        '<span class="battle-action-label">' + spell.name + '</span>' +
+        '<span class="battle-action-sub">' + spell.mp + ' MP</span></button>';
+    });
+
     html += '<button class="battle-action-btn defend" onclick="playerAction(\'defend\')"><span class="battle-action-icon">🛡️</span><span class="battle-action-label">Defend</span><span class="battle-action-sub">Reduce damage</span></button>';
     html += '</div>';
   } else if (battle.active && currentMember && gameState.battleInputLocked) {
