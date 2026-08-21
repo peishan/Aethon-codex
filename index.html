@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.24)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.25)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -1342,6 +1342,12 @@ body {
   .battle-actions .battle-action-label{font-size:.62rem!important}
   .battle-actions .battle-action-icon{font-size:.95rem!important}
 }
+
+
+/* v12.25 — Companion AI foundation */
+.companion-ai-strip{display:flex;align-items:center;justify-content:space-between;gap:6px;margin:6px 0;padding:5px 7px;border:1px solid rgba(212,168,67,.16);border-radius:6px;background:rgba(13,31,51,.5);font-size:.58rem;color:var(--parchment-dark)}
+.companion-ai-strip strong{color:var(--gold-light);font-family:Cinzel,serif;font-size:.58rem}
+.companion-ai-mode{opacity:.75}
 
 </style>
 <!--
@@ -4025,6 +4031,27 @@ function chooseCompanionSkill(member, battle) {
   return 'attack';
 }
 
+
+function companionAIAction(member, battle) {
+  if (!member || !battle || !battle.active || member.currentHP <= 0) return {type:'skip'};
+  const hpRatio = Number(member.currentHP || 0) / Number(member.stats?.maxHP || 1);
+  const mp = Number(member.currentMP || 0);
+  const bossRatio = battle.boss ? Number(battle.boss.hp || 0) / Number(battle.boss.maxHP || 1) : 1;
+
+  if (member.id === 'zaki') {
+    if (mp >= 20 && bossRatio <= 0.55) return {type:'skill', skill:'vanguard_charge'};
+    if (mp >= 15 && !battle._battleCryUsed && bossRatio > 0.45) {
+      battle._battleCryUsed = true;
+      return {type:'skill', skill:'battle_cry'};
+    }
+    if (mp >= 15 && hpRatio <= 0.45 && !member._ironWillUsed) {
+      member._ironWillUsed = true;
+      return {type:'skill', skill:'iron_will'};
+    }
+  }
+  return {type:'attack'};
+}
+
 function aiAction(member) {
   const battle = gameState.battleState;
   if (!battle || !battle.active || !member) return;
@@ -4427,6 +4454,8 @@ function renderBattle() {
   html += '<div class="boss-hp-bar"><div class="boss-hp-fill" style="width:' + hpPercent + '%"></div><div class="boss-hp-text">' + boss.hp + '/' + boss.maxHP + ' HP</div></div>';
   html += '<div style="font-size:0.8rem;color:var(--parchment-dark);margin-top:8px;">' + phase.desc + '</div>';
   html += '</div>';
+
+  html += '<div class="companion-ai-strip"><span><strong>Companions</strong> act automatically</span><span class="companion-ai-mode">ASSISTED</span></div>';
 
   // Party cards
   html += '<div class="party-battle-grid">';
