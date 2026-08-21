@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.37 — Ember Burst TEST Lv3)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.38 — San Level Progression)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -4296,7 +4296,9 @@ function initializeSanSpellbookV1() {
   const san = (gameState.party || []).find(p => p.id === 'san');
   if (!san) return;
 
-  const level = Number(san.level || san.lvl || 1);
+  // Codex progression uses the main character level stored in gameState.
+  // Party members inherit that progression rather than carrying a separate level.
+  const level = Number(gameState.level || 1);
   const known = getSanKnownSpells(level);
   san.spellbook = known.map(s => s.id);
 
@@ -4305,6 +4307,9 @@ function initializeSanSpellbookV1() {
   if (!Array.isArray(san.preparedSpells) || !san.preparedSpells.length) {
     san.preparedSpells = known.slice(0, 4).map(s => s.id);
   } else {
+    // Preserve the player's current prepared choices, then fill open slots
+    // with newly unlocked spells.
+    san.preparedSpells = san.preparedSpells.filter(id => known.some(s => s.id === id));
     known.forEach(spell => {
       if (san.preparedSpells.length < 4 &&
           !san.preparedSpells.includes(spell.id)) {
@@ -5020,9 +5025,6 @@ function installImageDiagnostics() {
 }
 
 function beginGame() {
-  // TEST BUILD v12.37: temporarily set San to Level 3 so Ember Burst can be verified.
-  const testSan = (gameState.party || []).find(p => p.id === 'san');
-  if (testSan) testSan.level = 3;
   installImageDiagnostics();
   document.getElementById('landingPage').style.display = 'none';
   document.getElementById('gameContainer').classList.add('active');
