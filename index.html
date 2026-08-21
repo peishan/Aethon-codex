@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.43 — Thunder Strike</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.45 — Save & Quest Stability</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -1627,6 +1627,30 @@ Add/update paths only in ART_ASSETS above.
 </div>
 
 <script>
+/* SAVE_INTEGRITY_CHECK_V1 */
+function runSaveIntegrityCheckV1() {
+  const raw = localStorage.getItem('aethonCodexSave');
+  if (!raw) return { exists:false, valid:false, reason:'No save found' };
+  try {
+    const data = JSON.parse(raw);
+    const checks = {
+      chapters: Array.isArray(data.chapters) || Array.isArray(data.completedChapters),
+      quests: Array.isArray(data.quests) || Array.isArray(data.questLog) || !!data.quests,
+      party: Array.isArray(data.party),
+      level: data.level !== undefined || data.playerLevel !== undefined,
+      gold: data.gold !== undefined,
+      inventory: Array.isArray(data.inventory) || !!data.inventory
+    };
+    return {
+      exists:true,
+      valid:Object.values(checks).filter(Boolean).length >= 3,
+      checks
+    };
+  } catch (e) {
+    return { exists:true, valid:false, reason:'Save JSON could not be parsed' };
+  }
+}
+
 /* MEZSTORM_SPELLBOOK_V1 */
 const MEZSTORM_SPELLBOOK_V1 = {
   1: [{id:'lightning_bolt',name:'Lightning Bolt',emoji:'⚡',mp:5,power:1.10,type:'single',description:'Reliable single-target storm magic.'}],
@@ -6138,5 +6162,5 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.43</div></body>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.45</div></body>
 </html>
