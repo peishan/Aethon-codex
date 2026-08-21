@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.30)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.31)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -3811,7 +3811,26 @@ function healPartyMember(id, amount) {
 function damagePartyMember(id, amount) {
   const member = getPartyMember(id);
   if (!member) return;
-  member.currentHP = Math.max(member.currentHP - amount, 0);
+
+  const incoming = Math.max(0, Number(amount) || 0);
+  const remaining = member.currentHP - incoming;
+
+  // Soel's spiritual identity makes him unkillable. Lethal damage causes
+  // Spirit Flame reforming rather than a normal death/downed state.
+  if (member.id === 'soel' && remaining <= 0) {
+    member.currentHP = Math.max(1, Math.floor(Number(member.stats?.maxHP || 1) * 0.35));
+    addCombatLog('🔥 SOEL — SPIRIT FLAME! SOEL REFORMS!', 'skill');
+    return;
+  }
+
+  // Eliz is likewise protected from permanent battle death.
+  if (member.id === 'eliz' && remaining <= 0) {
+    member.currentHP = Math.max(1, Math.floor(Number(member.stats?.maxHP || 1) * 0.35));
+    addCombatLog('✨ ELIZ — SPIRITUAL SURVIVAL!', 'skill');
+    return;
+  }
+
+  member.currentHP = Math.max(remaining, 0);
 }
 
 function restoreMP(id, amount) {
@@ -4084,7 +4103,11 @@ function companionAIAction(member, battle) {
   // Eliz — Healer / Resurrection.
   if (member.id === 'eliz') {
     const living = active.filter(p => p.currentHP > 0);
-    const fallen = active.filter(p => p.currentHP <= 0);
+    const fallen = active.filter(p =>
+      p.currentHP <= 0 &&
+      p.id !== 'eliz' &&
+      p.id !== 'soel'
+    );
 
     // Resurrection has the highest priority, but only once per battle for now.
     if (mp >= 30 && fallen.length && !battle._elizResurrectionUsed) {
@@ -4249,7 +4272,12 @@ function aiAction(member) {
       addCombatLog(member.name + ' casts Heal on ' + lowest.name + ' for ' + healAmount + ' HP!', 'heal');
       return;
     }
-    const dead = gameState.party.find(p => p.currentHP === 0 && p.active);
+    const dead = gameState.party.find(p =>
+      p.currentHP === 0 &&
+      p.active &&
+      p.id !== 'eliz' &&
+      p.id !== 'soel'
+    );
     if (dead && member.currentMP >= 40) {
       spendMP(member.id, 40);
       dead.currentHP = Math.floor(dead.stats.maxHP * 0.3);
