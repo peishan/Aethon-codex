@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.36 — Ember Burst)</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.37 — Ember Burst TEST Lv3)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -1368,6 +1368,19 @@ Party: assets/party/<character-id>.webp
 Bosses: assets/boss/<chapter-boss>.webp
 Add/update paths only in ART_ASSETS above.
 -->
+
+<style id="codex-build-footer-v1">
+.codex-build-footer {
+  text-align:center;
+  padding:14px 10px 20px;
+  margin-top:18px;
+  font-family:inherit;
+  font-size:11px;
+  letter-spacing:1px;
+  opacity:.7;
+}
+.codex-build-footer strong { font-weight:700; }
+</style>
 </head>
 <body>
 
@@ -5007,6 +5020,9 @@ function installImageDiagnostics() {
 }
 
 function beginGame() {
+  // TEST BUILD v12.37: temporarily set San to Level 3 so Ember Burst can be verified.
+  const testSan = (gameState.party || []).find(p => p.id === 'san');
+  if (testSan) testSan.level = 3;
   installImageDiagnostics();
   document.getElementById('landingPage').style.display = 'none';
   document.getElementById('gameContainer').classList.add('active');
