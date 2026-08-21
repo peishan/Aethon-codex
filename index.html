@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.46 — Save UI Fix</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.47 — Save Recovery</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -1451,8 +1451,9 @@ Add/update paths only in ART_ASSETS above.
       <button class="nav-tab" data-tab="battle" onclick="switchTab('battle')" id="battleNavTab">Battle</button>
     </nav>
     <div class="save-controls">
-      <button class="save-btn flashy" onclick="exportSave()" title="Download your save as a .json file">💾 Save</button>
-      <button class="save-btn" onclick="document.getElementById('importSaveInput').click()" title="Load a previously downloaded .json save">💾 Load</button>
+      <button class="save-btn flashy" onclick="saveAndVerifyV147()" title="Save your current journey and verify it">💾 Save</button>
+      <button class="save-btn" onclick="loadLocalSaveV147()" title="Load the saved journey from this browser">📥 Load</button>
+      <button class="save-btn" onclick="exportSave()" title="Download a JSON backup">📦 Backup</button>
       <input type="file" id="importSaveInput" accept="application/json,.json" style="display:none" onchange="importSave(event)">
     </div>
   </header>
@@ -1627,6 +1628,102 @@ Add/update paths only in ART_ASSETS above.
 </div>
 
 <script>
+/* SAVE_RECOVERY_V147 */
+const RECOVERY_SAVE_KEY_V147 = 'aethonCodexSaveRecovery';
+
+function isValidCodexSaveV147(data) {
+  return !!(data && data.gameState && typeof data.gameState === 'object');
+}
+
+function backupCurrentSaveV147() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    if (!isValidCodexSaveV147(parsed)) return false;
+    localStorage.setItem(RECOVERY_SAVE_KEY_V147, raw);
+    return true;
+  } catch (e) {
+    console.warn('Could not create recovery save:', e);
+    return false;
+  }
+}
+
+function saveGameV147() {
+  try {
+    backupCurrentSaveV147();
+    const payload = JSON.stringify(getSavePayload());
+    localStorage.setItem(SAVE_KEY, payload);
+    const check = localStorage.getItem(SAVE_KEY);
+    if (check !== payload) throw new Error('Save verification failed');
+    return true;
+  } catch (e) {
+    console.warn('Save failed:', e);
+    return false;
+  }
+}
+
+function loadLocalSaveV147() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) {
+      alert('No saved journey was found in this browser.');
+      return false;
+    }
+    const data = JSON.parse(raw);
+    if (!isValidCodexSaveV147(data)) throw new Error('Invalid save structure');
+    if (!applySaveData(data)) throw new Error('Save could not be applied');
+    beginGame();
+    showNotification('Saved journey loaded');
+    return true;
+  } catch (e) {
+    alert('The local save could not be read. Your recovery save was not changed.');
+    return false;
+  }
+}
+
+function loadRecoverySaveV147() {
+  try {
+    const raw = localStorage.getItem(RECOVERY_SAVE_KEY_V147);
+    if (!raw) {
+      alert('No recovery save is available on this browser.');
+      return false;
+    }
+    const data = JSON.parse(raw);
+    if (!isValidCodexSaveV147(data) || !applySaveData(data)) throw new Error('Invalid recovery save');
+    // Do not overwrite the recovery copy while restoring it.
+    localStorage.setItem(SAVE_KEY, raw);
+    beginGame();
+    showNotification('Recovery save loaded');
+    return true;
+  } catch (e) {
+    alert('The recovery save could not be read.');
+    return false;
+  }
+}
+
+function startNewGameV147() {
+  if (hasSavedGame()) {
+    const ok=confirm('Start a new game? Your current save will be kept as a recovery save.');
+    if (!ok) return;
+    backupCurrentSaveV147();
+    try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+  }
+  beginGame();
+}
+
+function saveAndVerifyV147() {
+  if (saveGameV147()) {
+    const s=codexSaveStatusV146 ? codexSaveStatusV146() : {};
+    const bits=[];
+    if (s.level!=null) bits.push('Level '+s.level);
+    if (s.quests!=null) bits.push(s.quests+' quests');
+    alert('Save verified' + (bits.length ? ' — '+bits.join(' · ') : '') + '.');
+  } else {
+    alert('Save could not be verified. Your previous save was not intentionally removed.');
+  }
+}
+
 /* SAVE_UI_V146 */
 function codexSaveStatusV146() {
   try {
@@ -3696,11 +3793,7 @@ function getSavePayload() {
 }
 
 function saveGame() {
-  try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(getSavePayload()));
-  } catch (e) {
-    console.warn('Auto-save failed:', e);
-  }
+  return saveGameV147();
 }
 
 function applySaveData(data) {
@@ -3862,13 +3955,11 @@ function loadGameFromStorage() {
 }
 
 function continueSavedGame() {
-  loadGameFromStorage();
-  beginGame();
+  return loadLocalSaveV147();
 }
 
 function startNewGame() {
-  try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
-  beginGame();
+  return startNewGameV147();
 }
 
 function exportSave() {
@@ -6226,11 +6317,11 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.46</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.47</div>
 <div id="save-tools-v146" style="margin:12px auto;max-width:680px;padding:10px;border:1px solid rgba(210,170,70,.45);border-radius:10px;background:rgba(5,15,25,.8);text-align:center;">
   <div style="font-family:serif;letter-spacing:1px;margin-bottom:7px;">SAVE MANAGEMENT</div>
   <button type="button" onclick="saveLocalAndVerifyV146()">💾 Save & Verify</button>
-  <button type="button" onclick="loadLocalSaveV146()">📥 Load Local Save</button>
+  <button type="button" onclick="loadLocalSaveV146()">📥 Load Local Save</button><button type="button" onclick="loadRecoverySaveV147()">🛟 Recovery Save</button>
   <button type="button" onclick="if(typeof exportSave==='function') exportSave(); else if(typeof saveGame==='function') saveGame();">📦 Export Backup</button>
   <label style="display:inline-block;margin:4px;">
     <input type="file" accept=".json,application/json" onchange="if(typeof importSave==='function'){importSave(event);}else{alert('Backup import is unavailable in this build.');}">
