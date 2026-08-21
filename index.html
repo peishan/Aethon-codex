@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.48 — Save System Stable</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.49 — Save UI Cleanup</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -1406,7 +1406,7 @@ Add/update paths only in ART_ASSETS above.
   <button class="btn-begin" id="btnBegin" onclick="beginGame()">Enter the Codex</button>
   <div class="continue-row" id="continueRow" style="display:none;">
     <p class="continue-note">A saved journey was found in this browser.</p>
-    <button class="btn-continue" onclick="continueSavedGame()">Continue Saved Journey</button>
+
     <button class="btn-newgame" onclick="startNewGame()">Start New Game</button>
   </div>
 </div>
@@ -6399,17 +6399,6 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.48</div>
-<div id="save-tools-v146" style="margin:12px auto;max-width:680px;padding:10px;border:1px solid rgba(210,170,70,.45);border-radius:10px;background:rgba(5,15,25,.8);text-align:center;">
-  <div style="font-family:serif;letter-spacing:1px;margin-bottom:7px;">SAVE MANAGEMENT</div>
-  <button type="button" onclick="saveLocalAndVerifyV146()">💾 Save & Verify</button>
-  <button type="button" onclick="loadLocalSaveV146()">📥 Load Local Save</button><button type="button" onclick="loadRecoverySaveV148()">🛟 Recovery Save</button>
-  <button type="button" onclick="if(typeof exportSave==='function') exportSave(); else if(typeof saveGame==='function') saveGame();">📦 Export Backup</button>
-  <label style="display:inline-block;margin:4px;">
-    <input type="file" accept=".json,application/json" onchange="importSaveV148(event)">
-    Import Backup
-  </label>
-  <div style="font-size:11px;opacity:.75;margin-top:6px;">Load Local Save restores the browser save. Import Backup is only for a downloaded JSON file.</div>
-</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.49</div>
 </body>
 </html>
