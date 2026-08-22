@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.52 — Save Load Diagnostic Fix</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.53 — Save Load Core Fix</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -3895,6 +3895,8 @@ const CORE_PARTY_IDS = new Set([
   'san', 'joel', 'aisyah', 'mezstorm', 'eliz', 'senedra', 'zaki'
 ]);
 const FAMILIAR_IDS = new Set(['soel']);
+// Core starting party used when migrating/loading legacy saves.
+const INITIAL_PARTY_IDS = new Set(['san', 'joel', 'aisyah', 'mezstorm', 'eliz', 'senedra', 'zaki']);
 
 function isCorePartyMember(member) {
   return !!member && CORE_PARTY_IDS.has(member.id);
@@ -6443,6 +6445,6 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.52</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.53</div>
 </body>
 </html>
