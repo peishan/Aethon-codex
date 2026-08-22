@@ -1628,6 +1628,27 @@ Add/update paths only in ART_ASSETS above.
 </div>
 
 <script>
+function startMezstormThunderclapDirectV166() {
+  try {
+    const zone=CODEX_GRIND_ZONES.unmappedRoad;
+    const base=zone && zone.encounters.find(e=>e.id==='road_wisp');
+    const mez=getActiveParty().find(p=>p.id==='mezstorm');
+    if(!base||!mez){alert('Thunderclap test setup failed.');return false;}
+    const target={...JSON.parse(JSON.stringify(base)),id:base.id+'_tc_'+Date.now(),name:base.name||'Road Wisp',hp:5000,maxHP:5000,currentHP:5000};
+    gameState.party.forEach(p=>{if(p.active&&p.joined){p.currentHP=p.stats.hp;p.currentMP=p.stats.mp;p.buffs=[];p.debuffs=[];}});
+    gameState.battleInputLocked=false;
+    gameState.battleState={chapterId:null,grind:true,thunderclapDirectTest:true,grindZoneId:'unmappedRoad',grindEncounterId:'road_wisp',boss:target,turnIndex:-1,turnOrder:[],round:1,log:[],active:true,waitingForPlayer:false,winner:null};
+    const active=getActiveParty().filter(p=>p.currentHP>0);
+    gameState.battleState.turnOrder=active.map(p=>({id:p.id,initiative:rollDie(20)+getModifier(Number(p.stats.spd)||10)})).sort((a,b)=>b.initiative-a.initiative);
+    gameState.battleState.forcedCasterId='mezstorm';
+    gameState.battleState.forcedSpellId='thunderclap';
+    gameState.battleState.forcedTargetId=target.id;
+    addCombatLog('=== MEZSTORM THUNDERCLAP DIRECT TEST ===','info');
+    addCombatLog('Thunderclap is forced for this test.','info');
+    switchTab('battle'); nextTurn(); return true;
+  } catch(e){console.error(e);alert('Could not start the Thunderclap test.');return false;}
+}
+
 /* MEZSTORM_THUNDERCLAP_TEST_V165 */
 function startMezstormThunderclapTestV165() {
   try {
@@ -6659,7 +6680,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.65 — MEZSTORM THUNDERCLAP TEST — MEZSTORM THUNDERCLAP TEST</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.66 — MEZSTORM THUNDERCLAP DIRECT TEST — MEZSTORM THUNDERCLAP TEST — MEZSTORM THUNDERCLAP TEST</div>
 
 <div id="mezstorm-test-build" style="text-align:center;font-size:11px;opacity:.65;margin:8px 0;">
   MEZSTORM TEST BUILD · Lightning / Storm abilities
@@ -6682,5 +6703,5 @@ document.addEventListener('keydown', (e) => {
  style="margin:6px;padding:8px 12px;border:1px solid rgba(150,130,255,.7);border-radius:8px;background:rgba(35,25,75,.9);color:inherit;">
 ⚡ Test Thunderclap — 1 Target
 </button>
-</body>
+<button id="mezstorm-thunderclap-direct-v166" type="button" onclick="startMezstormThunderclapDirectV166()">🔊 Test Thunderclap Directly — 1 Target</button></body>
 </html>
