@@ -4556,10 +4556,6 @@ function companionAIAction(member, battle) {
   // Senedra — Scout. During the dedicated test, exercise her real spellbook
   // instead of falling back to basic attacks.
   if (member.id === 'senedra' && window._senedraAbilityTestV172) {
-    if (mp >= 20 && !battle._senedraHunterMarkUsed) {
-      battle._senedraHunterMarkUsed = true;
-      return {type:'skill', skill:'hunter_mark'};
-    }
     if (mp >= 10 && !battle._senedraRevealUsed) {
       battle._senedraRevealUsed = true;
       return {type:'skill', skill:'reveal_weakness'};
@@ -6536,12 +6532,12 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.72 — SENEDRA ABILITIES TEST</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.73 — SENEDRA REVEAL WEAKNESS TEST</div>
 
 <button id="senedra-ability-test-v170" type="button"
  onclick="startSenedraAbilitiesTestV172()"
  style="margin:6px;padding:8px 12px;border:1px solid rgba(180,180,255,.7);border-radius:8px;background:rgba(35,25,75,.9);color:inherit;">
-✨ Test Senedra Abilities — 1 Target
+✨ Test Senedra — Reveal Weakness
 </button>
 </body>
 </html>
