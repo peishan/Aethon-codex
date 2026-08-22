@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.49 — Save UI Cleanup</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.50 — Enter Codex Save Fix</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -1403,7 +1403,7 @@ Add/update paths only in ART_ASSETS above.
   <h1 class="landing-title">The Aethon Codex</h1>
   <p class="landing-subtitle">Legends of Daybreak</p>
   <p class="landing-quote">"Every story is a spell. Every spell is a promise. And some promises outlive the stars themselves."</p>
-  <button class="btn-begin" id="btnBegin" onclick="beginGame()">Enter the Codex</button>
+  <button class="btn-begin" id="btnBegin" onclick="enterCodexV150()">Enter the Codex</button>
   <div class="continue-row" id="continueRow" style="display:none;">
     <p class="continue-note">A saved journey was found in this browser.</p>
 
@@ -1628,6 +1628,25 @@ Add/update paths only in ART_ASSETS above.
 </div>
 
 <script>
+/* ENTER_CODEX_SAVE_FIX_V150 */
+function enterCodexV150() {
+  const data = (typeof currentSaveRecordV148 === 'function') ? currentSaveRecordV148() : null;
+  if (data) {
+    if (typeof applyRecordV148 === 'function' && applyRecordV148(data)) {
+      beginGame();
+      showNotification('Saved journey loaded');
+      return true;
+    }
+    alert('A saved journey was found, but it could not be loaded. Your save was not changed.');
+    return false;
+  }
+  // No local save: this is genuinely a first-time entry.
+  gameState = createInitialGameState();
+  beginGame();
+  showNotification('New journey started');
+  return true;
+}
+
 /* SAVE_SYSTEM_V148 */
 const RECOVERY_SAVE_KEY_V148 = 'aethonCodexSaveRecoveryV148';
 const SAVE_SLOT_KEY_V148 = 'aethonCodexSaveSlotV148';
@@ -6399,6 +6418,6 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.49</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.50</div>
 </body>
 </html>
