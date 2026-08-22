@@ -4556,10 +4556,7 @@ function companionAIAction(member, battle) {
   // Senedra — Scout. During the dedicated test, exercise her real spellbook
   // instead of falling back to basic attacks.
   if (member.id === 'senedra' && window._senedraAbilityTestV172) {
-    if (mp >= 15 && !battle._senedraTrailblazerUsed) {
-      battle._senedraTrailblazerUsed = true;
-      return {type:'skill', skill:'trailblazer'};
-    }
+
   }
 
   return {type:'attack'};
@@ -6528,12 +6525,12 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.74 — SENEDRA TRAILBLAZER TEST</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.75 — SENEDRA FINAL ABILITY TEST</div>
 
 <button id="senedra-ability-test-v170" type="button"
  onclick="startSenedraAbilitiesTestV172()"
  style="margin:6px;padding:8px 12px;border:1px solid rgba(180,180,255,.7);border-radius:8px;background:rgba(35,25,75,.9);color:inherit;">
-✨ Test Senedra — Trailblazer
+✨ Test Senedra — Final Ability
 </button>
 </body>
 </html>
