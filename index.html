@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.55 — Mezstorm AoE Explore Test</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.56 — Mezstorm AoE Explore Test</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -1629,34 +1629,71 @@ Add/update paths only in ART_ASSETS above.
 
 <script>
 /* MEZSTORM_AOE_EXPLORE_TEST_V155 */
-function startMezstormAoETestV155() {
+function startMezstormAoETestV156() {
   try {
-    const candidates = [
-      ...(typeof ENEMY_TEMPLATES !== 'undefined' ? Object.values(ENEMY_TEMPLATES) : []),
-      ...(typeof enemyTemplates !== 'undefined' ? Object.values(enemyTemplates) : [])
-    ].filter(Boolean);
-
-    if (!candidates.length) {
-      alert('No standard enemy templates are available for the AoE test.');
+    const zone = CODEX_GRIND_ZONES.unmappedRoad;
+    const base = zone && zone.encounters.find(e => e.id === 'road_wisp');
+    if (!base) {
+      alert('The Unmapped Road test enemy could not be found.');
       return false;
     }
 
-    const base = candidates[0];
-    const enemies = [1,2,3].map((n,i) => ({
-      ...JSON.parse(JSON.stringify(base)),
-      id: `${base.id || 'aoe-test'}-mez-${n}-${Date.now()}-${i}`,
-      name: base.name || 'Training Echo',
-      hp: base.maxHp || base.hp || 100,
-      maxHp: base.maxHp || base.hp || 100,
-      currentHp: base.maxHp || base.hp || 100
+    if (!Array.isArray(gameState.party)) gameState.party = [];
+    gameState.party.forEach(p => {
+      if (p.active && p.joined) {
+        p.currentHP = p.stats.hp;
+        p.currentMP = p.stats.mp;
+        p.buffs = [];
+        p.debuffs = [];
+      }
+    });
+    const activeParty = getActiveParty().filter(p => p.currentHP > 0);
+    if (!activeParty.length) {
+      alert('No active party members are available for the AoE test.');
+      return false;
+    }
+
+    // Use the real Unmapped Road Road Wisp definition, cloned three times.
+    const targets = [1,2,3].map((n) => ({
+      id: base.id + '_aoe_' + n,
+      name: base.name + ' ' + n,
+      icon: base.icon,
+      hp: 5000,
+      maxHP: 5000,
+      ac: base.ac,
+      phaseIndex: 0,
+      phases: [{name: base.phase, damage: base.damage, desc: base.desc}]
     }));
 
-    if (typeof startBattle === 'function') return !!startBattle(enemies);
-    if (typeof beginBattle === 'function') return !!beginBattle(enemies);
-    if (typeof startCombat === 'function') return !!startCombat(enemies);
+    gameState.battleInputLocked = false;
+    gameState.battleState = {
+      chapterId:null,
+      grind:true,
+      mezstormAoETest:true,
+      grindZoneId:'unmappedRoad',
+      grindEncounterId:'road_wisp',
+      boss:targets[0],
+      aoeTargets:targets,
+      turnIndex:-1,
+      turnOrder:[],
+      round:1,
+      log:[],
+      active:true,
+      waitingForPlayer:false,
+      narrative:'Three Road Wisp echoes gather for the Mezstorm AoE test.',
+      winner:null
+    };
 
-    alert('The existing battle-start function could not be located in this build.');
-    return false;
+    gameState.battleState.turnOrder=activeParty.map(p=>({
+      id:p.id,
+      initiative:rollDie(20)+getModifier(Number(p.stats.spd)||10)
+    })).sort((a,b)=>b.initiative-a.initiative);
+
+    addCombatLog('=== MEZSTORM AOE TEST: 3 Road Wisp echoes ===','info');
+    addCombatLog('Chain Lightning should strike all three targets.','info');
+    switchTab('battle');
+    nextTurn();
+    return true;
   } catch (e) {
     console.error('Mezstorm AoE test failed:', e);
     alert('Could not start the 3-enemy AoE test.');
@@ -4889,6 +4926,29 @@ function aiAction(member) {
   if (member.id === 'mezstorm') {
     initializeMezstormSpellbookV1();
     const mezLevel = Number(gameState.level || 1);
+
+    // Dedicated v12.56 AoE test: use the first known multi-target spell and
+    // apply it to all three real Road Wisp test targets.
+    if (battle.mezstormAoETest && Array.isArray(battle.aoeTargets) && battle.aoeTargets.length >= 3) {
+      const aoeSpell = getMezstormKnownSpells(mezLevel).find(s => s.type === 'multi');
+      if (aoeSpell && member.currentMP >= aoeSpell.mp) {
+        spendMP('mezstorm', aoeSpell.mp);
+        const effectiveMez = codexEffectiveStats('mezstorm', member.stats || {});
+        const magMod = getModifier(effectiveMez.magic);
+        const roll = rollDie(20);
+        const total = roll + magMod;
+        const baseDamage = Math.max(1, Math.floor(Number(effectiveMez.magic || 10) * Number(aoeSpell.power || 1)));
+        if (roll === 20 || total >= Math.max(...battle.aoeTargets.map(t => t.ac))) {
+          const dmg = roll === 20 ? baseDamage * 2 : baseDamage;
+          battle.aoeTargets.forEach(t => { t.hp = Math.max(0, t.hp - dmg); });
+          addCombatLog((roll === 20 ? 'CRITICAL! ' : '') + aoeSpell.emoji + ' Mezstorm casts ' + aoeSpell.name + ' for ' + dmg + ' damage to ALL 3 targets!', roll === 20 ? 'crit' : 'damage');
+        } else {
+          addCombatLog("Mezstorm's " + aoeSpell.name + ' misses all three targets!', 'info');
+        }
+        battle.boss = battle.aoeTargets[0];
+        return;
+      }
+    }
     const thunder = mezstormSpellById('thunder_strike');
     const lightning = mezstormSpellById('lightning_bolt');
     const stormSpell = (mezLevel >= 3 && thunder && member.currentMP >= thunder.mp)
@@ -5343,6 +5403,15 @@ function renderBattle() {
   html += '<div class="boss-phase">Phase: ' + phase.name + '</div>';
   html += '<div class="boss-hp-bar"><div class="boss-hp-fill" style="width:' + hpPercent + '%"></div><div class="boss-hp-text">' + boss.hp + '/' + boss.maxHP + ' HP</div></div>';
   html += '<div style="font-size:0.8rem;color:var(--parchment-dark);margin-top:8px;">' + phase.desc + '</div>';
+  if (battle.mezstormAoETest && Array.isArray(battle.aoeTargets)) {
+    html += '<div style="margin-top:12px;padding:10px;border:1px solid rgba(100,180,255,.35);border-radius:8px;">';
+    html += '<div style="font-size:.85rem;margin-bottom:6px;">AoE Test Targets</div>';
+    battle.aoeTargets.forEach(t => {
+      const pct = Math.max(0, Math.min(100, t.hp / t.maxHP * 100));
+      html += '<div style="font-size:.78rem;margin:4px 0;">' + t.name + ' — ' + t.hp + '/' + t.maxHP + ' HP <span style="opacity:.75">(' + Math.round(pct) + '%)</span></div>';
+    });
+    html += '</div>';
+  }
   html += '</div>';
 
   html += '<div class="companion-ai-strip"><span><strong>Companions</strong> use class AI</span><span class="companion-ai-mode">ASSISTED</span></div>';
@@ -6481,16 +6550,16 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.55 — MEZSTORM AOE EXPLORE TEST</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.56 — MEZSTORM AOE EXPLORE TEST</div>
 
 <div id="mezstorm-test-build" style="text-align:center;font-size:11px;opacity:.65;margin:8px 0;">
   MEZSTORM TEST BUILD · Lightning / Storm abilities
 </div>
 
-<button id="mezstorm-aoe-test-button-v155" type="button"
- onclick="startMezstormAoETestV155()"
+<button id="mezstorm-aoe-test-button-v156" type="button"
+ onclick="startMezstormAoETestV156()"
  style="margin:6px;padding:8px 12px;border:1px solid rgba(100,180,255,.55);border-radius:8px;background:rgba(20,50,80,.8);color:inherit;">
-⚡ Mezstorm AoE Test — 3 Enemies
+⚡ Mezstorm AoE Test — 3 Road Wisps
 </button>
 </body>
 </html>
