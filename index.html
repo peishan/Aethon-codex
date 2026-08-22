@@ -4569,6 +4569,15 @@ function companionAIAction(member, battle) {
 
   }
 
+
+  // Aisyah — Sneak Attack test. Use her existing skill execution pipeline.
+  if (member.id === 'aisyah' && window._aisyahSneakAttackTestV177) {
+    if (mp >= 10 && !battle._aisyahSneakAttackUsed) {
+      battle._aisyahSneakAttackUsed = true;
+      return {type:'skill', skill:'sneak_attack'};
+    }
+  }
+
   return {type:'attack'};
 }
 
@@ -4606,6 +4615,20 @@ function executeCompanionSkill(member, skill, battle) {
       addCombatLog('🦌 ' + member.name.toUpperCase() + ' — TRAILBLAZER!', 'skill');
       addCombatLog('Party SPD increased for 2 turns!', 'info');
       battle.narrative = member.name + " leads the party forward!";
+      return true;
+    }
+  }
+
+
+  if (member.id === 'aisyah') {
+    if (skill === 'sneak_attack' && member.currentMP >= 10) {
+      spend(10);
+      const bonus = Math.max(1, Math.floor(Number(member.stats.atk || 10) * 0.75));
+      const dmg = Math.max(1, rollDie(8) + bonus);
+      boss.hp = Math.max(0, boss.hp - dmg);
+      addCombatLog('🗡️ ' + member.name.toUpperCase() + ' — SNEAK ATTACK!', 'skill');
+      addCombatLog(dmg + ' bonus damage from the shadows!', 'damage');
+      battle.narrative = member.name + ' strikes from the shadows!';
       return true;
     }
   }
@@ -6535,7 +6558,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.77 — AISYAH SNEAK ATTACK TEST — SENEDRA FINAL ABILITY TEST</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.78 — AISYAH SNEAK ATTACK WIRED TEST — SENEDRA FINAL ABILITY TEST</div>
 
 <button id="senedra-ability-test-v170" type="button"
  onclick="startSenedraAbilitiesTestV172()"
@@ -6546,7 +6569,7 @@ document.addEventListener('keydown', (e) => {
 <button id="aisyah-sneak-attack-test-v177" type="button"
  onclick="startAisyahSneakAttackTestV177()"
  style="margin:6px;padding:8px 12px;border:1px solid rgba(180,180,255,.7);border-radius:8px;background:rgba(35,25,75,.9);color:inherit;">
-🗡️ Test Aisyah — Sneak Attack
+🗡️ Test Aisyah — Sneak Attack (Wired)
 </button>
 </body>
 </html>
