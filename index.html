@@ -1631,8 +1631,8 @@ Add/update paths only in ART_ASSETS above.
 /* MEZSTORM_STORM_SURGE_DIRECT_TEST_V158 */
 function startMezstormStormSurgeDirectTestV158() {
   try {
-    if (typeof startMezstormAoETestV155 === 'function') {
-      startMezstormAoETestV155();
+    if (typeof startMezstormAoETestV156 === 'function') {
+      startMezstormAoETestV156();
       setTimeout(function () {
         const mez = (typeof gameState !== 'undefined' && gameState.party)
           ? gameState.party.find(p => /mezstorm/i.test(p.name || ''))
@@ -1703,6 +1703,7 @@ function startMezstormAoETestV156() {
       chapterId:null,
       grind:true,
       mezstormAoETest:true,
+      mezstormAoESpellId:'storm_surge',
       grindZoneId:'unmappedRoad',
       grindEncounterId:'road_wisp',
       boss:targets[0],
@@ -1723,7 +1724,7 @@ function startMezstormAoETestV156() {
     })).sort((a,b)=>b.initiative-a.initiative);
 
     addCombatLog('=== MEZSTORM AOE TEST: 3 Road Wisp echoes ===','info');
-    addCombatLog('Chain Lightning should strike all three targets.','info');
+    addCombatLog('Storm Surge should strike all three targets.','info');
     switchTab('battle');
     nextTurn();
     return true;
@@ -4963,7 +4964,9 @@ function aiAction(member) {
     // Dedicated v12.56 AoE test: use the first known multi-target spell and
     // apply it to all three real Road Wisp test targets.
     if (battle.mezstormAoETest && Array.isArray(battle.aoeTargets) && battle.aoeTargets.length >= 3) {
-      const aoeSpell = getMezstormKnownSpells(mezLevel).find(s => s.type === 'multi');
+      const aoeSpell = battle.mezstormAoESpellId
+        ? mezstormSpellById(battle.mezstormAoESpellId)
+        : getMezstormKnownSpells(mezLevel).find(s => s.type === 'multi');
       if (aoeSpell && member.currentMP >= aoeSpell.mp) {
         spendMP('mezstorm', aoeSpell.mp);
         const effectiveMez = codexEffectiveStats('mezstorm', member.stats || {});
@@ -6583,7 +6586,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.58 — MEZSTORM STORM SURGE DIRECT TEST</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.59 — MEZSTORM STORM SURGE TEST</div>
 
 <div id="mezstorm-test-build" style="text-align:center;font-size:11px;opacity:.65;margin:8px 0;">
   MEZSTORM TEST BUILD · Lightning / Storm abilities
@@ -6595,10 +6598,10 @@ document.addEventListener('keydown', (e) => {
 ⚡ Mezstorm AoE Test — 3 Road Wisps
 </button>
 
-<button id="mezstorm-storm-surge-direct-v158" type="button"
- onclick="startMezstormStormSurgeDirectTestV158()"
+<button id="mezstorm-storm-surge-test-v159" type="button"
+ onclick="startMezstormAoETestV156()"
  style="margin:6px;padding:8px 12px;border:1px solid rgba(120,180,255,.65);border-radius:8px;background:rgba(20,50,80,.9);color:inherit;">
-⚡ Test Storm Surge Directly — 3 Enemies
+⚡ Test Storm Surge — 3 Enemies
 </button>
 </body>
 </html>
