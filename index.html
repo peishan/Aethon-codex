@@ -1629,7 +1629,7 @@ Add/update paths only in ART_ASSETS above.
 
 <script>
 function startAisyahCoupDeGraceTestV178() {
-  window._aisyahCoupDeGraceTestV178 = true;
+  window._aisyahCoupDeGraceTestV179 = true;
   startGrindingBattle('unmappedRoad','road_wisp');
 }
 
@@ -4574,6 +4574,15 @@ function companionAIAction(member, battle) {
 
   }
 
+  if (member.id === 'aisyah' && window._aisyahCoupDeGraceTestV179) {
+    const hp = Number(battle.boss?.currentHP ?? battle.boss?.hp ?? 0);
+    const maxHp = Number(battle.boss?.maxHP ?? battle.boss?.hp ?? 1);
+    if (hp <= maxHp * 0.25 && !battle._aisyahCoupDeGraceUsed) {
+      battle._aisyahCoupDeGraceUsed = true;
+      return {type:'skill', skill:'coup_de_grace'};
+    }
+  }
+
   return {type:'attack'};
 }
 
@@ -4611,6 +4620,25 @@ function executeCompanionSkill(member, skill, battle) {
       addCombatLog('🦌 ' + member.name.toUpperCase() + ' — TRAILBLAZER!', 'skill');
       addCombatLog('Party SPD increased for 2 turns!', 'info');
       battle.narrative = member.name + " leads the party forward!";
+      return true;
+    }
+  }
+
+  if (member.id === 'aisyah') {
+    if (skill === 'coup_de_grace') {
+      const hp = Number(boss.currentHP ?? boss.hp ?? 0);
+      const maxHp = Number(boss.maxHP ?? boss.hp ?? 1);
+      // Coup de Grace is an execution move: only available when the target
+      // is below 25% HP. Otherwise it does not fire and normal attacks remain.
+      if (hp > maxHp * 0.25) return false;
+      const roll = rollDie(20) + getModifier(Number(member.stats.str) || 10);
+      const base = Math.max(1, Number(member.stats.dex) || 10);
+      const damage = Math.max(1, Math.floor(base * 2.5) + rollDie(8));
+      boss.currentHP = Math.max(0, hp - damage);
+      boss.hp = boss.currentHP;
+      addCombatLog('🗡️ ' + member.name.toUpperCase() + ' — COUP DE GRACE!', 'skill');
+      addCombatLog(boss.name + ' takes ' + damage + ' execution damage.', 'damage');
+      battle.narrative = member.name + ' strikes the weakened enemy with Coup de Grace!';
       return true;
     }
   }
@@ -6540,7 +6568,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.78 — AISYAH COUP DE GRACE TEST — SENEDRA FINAL ABILITY TEST</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.79 — AISYAH COUP DE GRACE IMPLEMENTED TEST — SENEDRA FINAL ABILITY TEST</div>
 
 <button id="senedra-ability-test-v170" type="button"
  onclick="startSenedraAbilitiesTestV172()"
