@@ -1628,13 +1628,31 @@ Add/update paths only in ART_ASSETS above.
 </div>
 
 <script>
+function getAisyahHagglingDiscountPercent() {
+  return 10;
+}
+function isAisyahActiveForHaggling() {
+  try {
+    const party = (typeof getActiveParty === 'function') ? getActiveParty() : [];
+    return party.some(p => /aisyah/i.test(String(p?.id || p?.name || '')));
+  } catch (e) {
+    return false;
+  }
+}
+function getTraderPriceWithHaggling(basePrice) {
+  const base = Math.max(1, Math.floor(Number(basePrice) || 0));
+  if (!isAisyahActiveForHaggling()) return base;
+  const pct = getAisyahHagglingDiscountPercent();
+  return Math.max(1, Math.floor(base * (1 - pct / 100)));
+}
+
 function openAisyahHagglingTestV181() {
   window._aisyahHagglingTestV181 = true;
   const active = (typeof getActiveParty === 'function') ? getActiveParty() : [];
   const hasAisyah = active.some(p => /aisyah/i.test(String(p.id || p.name || '')));
   const basePrice = 100;
   const pct = hasAisyah ? 10 : 0;
-  const finalPrice = Math.max(1, Math.floor(basePrice * (1 - pct / 100)));
+  const finalPrice = getTraderPriceWithHaggling(Math.max(1, Math.floor(basePrice * (1 - pct / 100))));
   alert(
     'HAGGLING TEST\\n\\n' +
     'Trader item: 100 gold\\n' +
@@ -6601,7 +6619,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.81 — AISYAH HAGGLING SHOP TEST — SENEDRA FINAL ABILITY TEST</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.82 — AISYAH HAGGLING TRADER TEST — AISYAH HAGGLING SHOP TEST — SENEDRA FINAL ABILITY TEST</div>
 
 <button id="senedra-ability-test-v170" type="button"
  onclick="startSenedraAbilitiesTestV172()"
@@ -6619,6 +6637,12 @@ document.addEventListener('keydown', (e) => {
  onclick="openAisyahHagglingTestV181()"
  style="margin:6px;padding:8px 12px;border:1px solid rgba(180,180,255,.7);border-radius:8px;background:rgba(35,25,75,.9);color:inherit;">
 🪙 Test Aisyah — Haggling
+</button>
+
+<button id="aisyah-haggling-trader-test-v182" type="button"
+ onclick="(function(){const base=100; const actual=getTraderPriceWithHaggling(base); alert('TRADER HAGGLING TEST\n\nBase price: '+base+' gold\nAisyah active: '+(isAisyahActiveForHaggling()?'YES':'NO')+'\nHaggling discount: '+(isAisyahActiveForHaggling()?getAisyahHagglingDiscountPercent():0)+'%\nActual trader price: '+actual+' gold');})()"
+ style="margin:6px;padding:8px 12px;border:1px solid rgba(180,180,255,.7);border-radius:8px;background:rgba(35,25,75,.9);color:inherit;">
+🪙 Verify Trader Haggling
 </button>
 </body>
 </html>
