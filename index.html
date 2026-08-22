@@ -1628,6 +1628,22 @@ Add/update paths only in ART_ASSETS above.
 </div>
 
 <script>
+function openAisyahHagglingTestV181() {
+  window._aisyahHagglingTestV181 = true;
+  const active = (typeof getActiveParty === 'function') ? getActiveParty() : [];
+  const hasAisyah = active.some(p => /aisyah/i.test(String(p.id || p.name || '')));
+  const basePrice = 100;
+  const pct = hasAisyah ? 10 : 0;
+  const finalPrice = Math.max(1, Math.floor(basePrice * (1 - pct / 100)));
+  alert(
+    'HAGGLING TEST\\n\\n' +
+    'Trader item: 100 gold\\n' +
+    'Aisyah active: ' + (hasAisyah ? 'YES' : 'NO') + '\\n' +
+    'Haggling discount: ' + pct + '%\\n' +
+    'Test price: ' + finalPrice + ' gold'
+  );
+}
+
 function startAisyahCoupDeGraceTestV180() {
   window._aisyahCoupDeGraceTestV180 = true;
   startGrindingBattle('unmappedRoad','road_wisp');
@@ -6585,7 +6601,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.80 — AISYAH COUP DE GRACE TEST — SENEDRA FINAL ABILITY TEST</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.81 — AISYAH HAGGLING SHOP TEST — SENEDRA FINAL ABILITY TEST</div>
 
 <button id="senedra-ability-test-v170" type="button"
  onclick="startSenedraAbilitiesTestV172()"
@@ -6597,6 +6613,12 @@ document.addEventListener('keydown', (e) => {
  onclick="startAisyahCoupDeGraceTestV180()"
  style="margin:6px;padding:8px 12px;border:1px solid rgba(180,180,255,.7);border-radius:8px;background:rgba(35,25,75,.9);color:inherit;">
 🗡️ Test Aisyah — Coup de Grace
+</button>
+
+<button id="aisyah-haggling-test-v181" type="button"
+ onclick="openAisyahHagglingTestV181()"
+ style="margin:6px;padding:8px 12px;border:1px solid rgba(180,180,255,.7);border-radius:8px;background:rgba(35,25,75,.9);color:inherit;">
+🪙 Test Aisyah — Haggling
 </button>
 </body>
 </html>
