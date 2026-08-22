@@ -1629,67 +1629,7 @@ Add/update paths only in ART_ASSETS above.
 
 <script>
 
-/* SENEDRA_ABILITY_TEST_V169 */
-function startSenedraAbilityTestV169() {
-  try {
-    const zone = CODEX_GRIND_ZONES && CODEX_GRIND_ZONES.unmappedRoad;
-    const base = zone && zone.encounters && zone.encounters.find(e => e.id === 'road_wisp');
-    const party = (typeof getActiveParty === 'function') ? getActiveParty() : (gameState.party || []);
-    const senedra = party.find(p => /senedra/i.test(String(p.name || p.id || '')));
-    if (!base) { alert('The Road Wisp test enemy could not be found.'); return false; }
-    if (!senedra) { alert('Senedra could not be found in the active party.'); return false; }
 
-    gameState.party.forEach(p => {
-      if (p.active && p.joined) {
-        p.currentHP = p.stats.hp;
-        p.currentMP = p.stats.mp;
-        p.buffs = [];
-        p.debuffs = [];
-      }
-    });
-
-    const target = JSON.parse(JSON.stringify(base));
-    target.id = base.id + '_senedra_' + Date.now();
-    target.name = base.name || 'Road Wisp';
-    target.hp = 5000;
-    target.maxHP = 5000;
-    target.currentHP = 5000;
-
-    gameState.battleInputLocked = false;
-    gameState.battleState = {
-      chapterId: null,
-      grind: true,
-      senedraAbilityTest: true,
-      grindZoneId: 'unmappedRoad',
-      grindEncounterId: 'road_wisp',
-      boss: target,
-      turnIndex: -1,
-      turnOrder: [],
-      round: 1,
-      log: [],
-      active: true,
-      waitingForPlayer: false,
-      narrative: 'Senedra ability test — one Road Wisp target.',
-      winner: null
-    };
-
-    const active = party.filter(p => p.currentHP > 0);
-    gameState.battleState.turnOrder = active.map(p => ({
-      id: p.id,
-      initiative: rollDie(20) + getModifier(Number(p.stats.spd) || 10)
-    })).sort((a,b) => b.initiative - a.initiative);
-
-    addCombatLog('=== SENEDRA ABILITY TEST ===','info');
-    addCombatLog('One target. Senedra is active for normal AI testing.','info');
-    switchTab('battle');
-    nextTurn();
-    return true;
-  } catch(e) {
-    console.error(e);
-    alert('Could not start the Senedra test.');
-    return false;
-  }
-}
 
 
 /* MEZSTORM_THUNDERCLAP_TEST_V167 */
@@ -6778,7 +6718,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.69 — SENEDRA TEST</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.70 — SENEDRA TEST</div>
 
 <div id="mezstorm-test-build" style="text-align:center;font-size:11px;opacity:.65;margin:8px 0;">
   MEZSTORM TEST BUILD · Lightning / Storm abilities
@@ -6808,8 +6748,8 @@ document.addEventListener('keydown', (e) => {
 🔊 Test Thunderclap — 1 Target
 </button>
 
-<button id="senedra-ability-test-v168" type="button"
- onclick="startSenedraAbilityTestV169()"
+<button id="senedra-ability-test-v170" type="button"
+ onclick="startGrindingBattle('unmappedRoad','road_wisp')"
  style="margin:6px;padding:8px 12px;border:1px solid rgba(180,180,255,.7);border-radius:8px;background:rgba(35,25,75,.9);color:inherit;">
 ✨ Test Senedra — 1 Target
 </button>
