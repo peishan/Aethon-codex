@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.54 — Mezstorm Test</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.55 — Mezstorm AoE Explore Test</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -1628,6 +1628,42 @@ Add/update paths only in ART_ASSETS above.
 </div>
 
 <script>
+/* MEZSTORM_AOE_EXPLORE_TEST_V155 */
+function startMezstormAoETestV155() {
+  try {
+    const candidates = [
+      ...(typeof ENEMY_TEMPLATES !== 'undefined' ? Object.values(ENEMY_TEMPLATES) : []),
+      ...(typeof enemyTemplates !== 'undefined' ? Object.values(enemyTemplates) : [])
+    ].filter(Boolean);
+
+    if (!candidates.length) {
+      alert('No standard enemy templates are available for the AoE test.');
+      return false;
+    }
+
+    const base = candidates[0];
+    const enemies = [1,2,3].map((n,i) => ({
+      ...JSON.parse(JSON.stringify(base)),
+      id: `${base.id || 'aoe-test'}-mez-${n}-${Date.now()}-${i}`,
+      name: base.name || 'Training Echo',
+      hp: base.maxHp || base.hp || 100,
+      maxHp: base.maxHp || base.hp || 100,
+      currentHp: base.maxHp || base.hp || 100
+    }));
+
+    if (typeof startBattle === 'function') return !!startBattle(enemies);
+    if (typeof beginBattle === 'function') return !!beginBattle(enemies);
+    if (typeof startCombat === 'function') return !!startCombat(enemies);
+
+    alert('The existing battle-start function could not be located in this build.');
+    return false;
+  } catch (e) {
+    console.error('Mezstorm AoE test failed:', e);
+    alert('Could not start the 3-enemy AoE test.');
+    return false;
+  }
+}
+
 /* ENTER_CODEX_SAVE_FIX_V150 */
 function enterCodexV150() {
   try {
@@ -6445,10 +6481,16 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.54 — MEZSTORM TEST</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.55 — MEZSTORM AOE EXPLORE TEST</div>
 
 <div id="mezstorm-test-build" style="text-align:center;font-size:11px;opacity:.65;margin:8px 0;">
   MEZSTORM TEST BUILD · Lightning / Storm abilities
 </div>
+
+<button id="mezstorm-aoe-test-button-v155" type="button"
+ onclick="startMezstormAoETestV155()"
+ style="margin:6px;padding:8px 12px;border:1px solid rgba(100,180,255,.55);border-radius:8px;background:rgba(20,50,80,.8);color:inherit;">
+⚡ Mezstorm AoE Test — 3 Enemies
+</button>
 </body>
 </html>
