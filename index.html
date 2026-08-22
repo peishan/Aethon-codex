@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.51 — Enter Codex Click Fix</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.52 — Save Load Diagnostic Fix</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -1632,26 +1632,43 @@ Add/update paths only in ART_ASSETS above.
 function enterCodexV150() {
   try {
     const raw = localStorage.getItem('aethonCodexSave');
-    if (raw) {
-      const data = JSON.parse(raw);
-      if (!data || !data.gameState) throw new Error('Invalid save structure');
+    if (!raw) {
+      gameState = createInitialGameState();
+      beginGame();
+      if (typeof showNotification === 'function') showNotification('New journey started');
+      return true;
+    }
 
-      if (typeof applySaveData === 'function' && applySaveData(data)) {
-        beginGame();
-        if (typeof showNotification === 'function') showNotification('Saved journey loaded');
-        return true;
-      }
-
-      alert('A saved journey was found, but it could not be loaded. Your save was not changed.');
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch (e) {
+      alert('A saved journey exists, but its JSON could not be read. Your save was not changed.');
+      console.error('Save JSON parse failed:', e);
       return false;
     }
 
-    gameState = createInitialGameState();
+    if (!data || !data.gameState || typeof data.gameState !== 'object') {
+      alert('A saved journey exists, but it uses an unsupported save format. Your save was not changed.');
+      console.error('Save structure invalid:', data);
+      return false;
+    }
+
+    try {
+      if (typeof applySaveData !== 'function' || !applySaveData(data)) {
+        throw new Error('applySaveData returned false');
+      }
+    } catch (e) {
+      alert('Your saved journey could not be loaded. Your save was not changed.');
+      console.error('Save application failed:', e);
+      return false;
+    }
+
     beginGame();
-    if (typeof showNotification === 'function') showNotification('New journey started');
+    if (typeof showNotification === 'function') showNotification('Saved journey loaded');
     return true;
   } catch (e) {
-    console.error('Enter Codex save load failed:', e);
+    console.error('Enter Codex failed:', e);
     alert('Your saved journey could not be loaded. Your save was not changed.');
     return false;
   }
@@ -4069,10 +4086,8 @@ function applySaveData(data) {
         .filter(Number.isFinite);
     });
 
-  // The migration is intentionally transparent; save the normalized schema
-  // so subsequent loads don't repeat the conversion.
-  if (previousVersion < SAVE_VERSION) saveGame();
-
+  // Migration is applied in memory here. The explicit save routine can be
+  // invoked by the user after a successful load; do not save during loading.
   return true;
 }
 
@@ -6428,6 +6443,6 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.51</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.52</div>
 </body>
 </html>
