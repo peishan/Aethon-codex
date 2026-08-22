@@ -1628,6 +1628,75 @@ Add/update paths only in ART_ASSETS above.
 </div>
 
 <script>
+/* MEZSTORM_TEMPEST_DIRECT_TEST_V160 */
+function startMezstormTempestTestV160() {
+  try {
+    const zone = CODEX_GRIND_ZONES.unmappedRoad;
+    const base = zone && zone.encounters.find(e => e.id === 'road_wisp');
+    if (!base) {
+      alert('The Unmapped Road test enemy could not be found.');
+      return false;
+    }
+
+    if (!Array.isArray(gameState.party)) gameState.party = [];
+    gameState.party.forEach(p => {
+      if (p.active && p.joined) {
+        p.currentHP = p.stats.hp;
+        p.currentMP = p.stats.mp;
+        p.buffs = [];
+      }
+    });
+
+    const targets = [1,2,3].map((n,i) => ({
+      ...JSON.parse(JSON.stringify(base)),
+      id: `${base.id}-tempest-${Date.now()}-${i}`,
+      name: base.name || 'Road Wisp',
+      currentHP: base.hp || 70,
+      maxHP: base.hp || 70,
+      hp: base.hp || 70,
+      ac: base.ac || 12,
+      xp: 0,
+      gold: 0
+    }));
+
+    gameState.battleInputLocked = false;
+    gameState.battleState = {
+      chapterId:null,
+      grind:true,
+      mezstormAoETest:true,
+      mezstormAoESpellId:'tempest',
+      grindZoneId:'unmappedRoad',
+      grindEncounterId:'road_wisp',
+      boss:targets[0],
+      aoeTargets:targets,
+      turnIndex:-1,
+      turnOrder:[],
+      round:1,
+      log:[],
+      active:true,
+      waitingForPlayer:false,
+      narrative:'Three Road Wisp echoes gather for the Mezstorm Tempest test.',
+      winner:null
+    };
+
+    const activeParty = gameState.party.filter(p => p.active && p.joined && p.currentHP > 0);
+    gameState.battleState.turnOrder = activeParty.map(p => ({
+      id:p.id,
+      initiative:rollDie(20)+getModifier(Number(p.stats.spd)||10)
+    })).sort((a,b)=>b.initiative-a.initiative);
+
+    addCombatLog('=== MEZSTORM TEMPEST TEST: 3 Road Wisp echoes ===','info');
+    addCombatLog('Tempest should strike all three targets.','info');
+    switchTab('battle');
+    nextTurn();
+    return true;
+  } catch (e) {
+    console.error('Mezstorm Tempest test failed:', e);
+    alert('Could not start the Tempest test.');
+    return false;
+  }
+}
+
 /* MEZSTORM_STORM_SURGE_DIRECT_TEST_V158 */
 function startMezstormStormSurgeDirectTestV158() {
   try {
@@ -6586,7 +6655,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.59 — MEZSTORM STORM SURGE TEST</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.60 — MEZSTORM TEMPEST TEST</div>
 
 <div id="mezstorm-test-build" style="text-align:center;font-size:11px;opacity:.65;margin:8px 0;">
   MEZSTORM TEST BUILD · Lightning / Storm abilities
@@ -6602,6 +6671,12 @@ document.addEventListener('keydown', (e) => {
  onclick="startMezstormAoETestV156()"
  style="margin:6px;padding:8px 12px;border:1px solid rgba(120,180,255,.65);border-radius:8px;background:rgba(20,50,80,.9);color:inherit;">
 ⚡ Test Storm Surge — 3 Enemies
+</button>
+
+<button id="mezstorm-tempest-test-v160" type="button"
+ onclick="startMezstormTempestTestV160()"
+ style="margin:6px;padding:8px 12px;border:1px solid rgba(150,130,255,.7);border-radius:8px;background:rgba(35,25,75,.9);color:inherit;">
+⚡ Test Tempest — 3 Enemies
 </button>
 </body>
 </html>
