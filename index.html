@@ -1628,16 +1628,16 @@ Add/update paths only in ART_ASSETS above.
 </div>
 
 <script>
-/* SENEDRA_ABILITY_TEST_V168 */
-function startSenedraAbilityTestV168() {
+
+/* SENEDRA_ABILITY_TEST_V169 */
+function startSenedraAbilityTestV169() {
   try {
-    const zone = CODEX_GRIND_ZONES.unmappedRoad;
-    const base = zone && zone.encounters.find(e => e.id === 'road_wisp');
-    const senedra = getActiveParty().find(p => /senedra/i.test(p.name || '') || p.id === 'senedra');
-    if (!base || !senedra) {
-      alert('Could not find Senedra or the Road Wisp test enemy.');
-      return false;
-    }
+    const zone = CODEX_GRIND_ZONES && CODEX_GRIND_ZONES.unmappedRoad;
+    const base = zone && zone.encounters && zone.encounters.find(e => e.id === 'road_wisp');
+    const party = (typeof getActiveParty === 'function') ? getActiveParty() : (gameState.party || []);
+    const senedra = party.find(p => /senedra/i.test(String(p.name || p.id || '')));
+    if (!base) { alert('The Road Wisp test enemy could not be found.'); return false; }
+    if (!senedra) { alert('Senedra could not be found in the active party.'); return false; }
 
     gameState.party.forEach(p => {
       if (p.active && p.joined) {
@@ -1648,14 +1648,12 @@ function startSenedraAbilityTestV168() {
       }
     });
 
-    const target = {
-      ...JSON.parse(JSON.stringify(base)),
-      id: base.id + '_senedra_' + Date.now(),
-      name: base.name || 'Road Wisp',
-      hp: 5000,
-      maxHP: 5000,
-      currentHP: 5000
-    };
+    const target = JSON.parse(JSON.stringify(base));
+    target.id = base.id + '_senedra_' + Date.now();
+    target.name = base.name || 'Road Wisp';
+    target.hp = 5000;
+    target.maxHP = 5000;
+    target.currentHP = 5000;
 
     gameState.battleInputLocked = false;
     gameState.battleState = {
@@ -1675,23 +1673,24 @@ function startSenedraAbilityTestV168() {
       winner: null
     };
 
-    const active = getActiveParty().filter(p => p.currentHP > 0);
+    const active = party.filter(p => p.currentHP > 0);
     gameState.battleState.turnOrder = active.map(p => ({
       id: p.id,
       initiative: rollDie(20) + getModifier(Number(p.stats.spd) || 10)
-    })).sort((a, b) => b.initiative - a.initiative);
+    })).sort((a,b) => b.initiative - a.initiative);
 
-    addCombatLog('=== SENEDRA ABILITY TEST ===', 'info');
-    addCombatLog('One target. Let Senedra run on normal AI.', 'info');
+    addCombatLog('=== SENEDRA ABILITY TEST ===','info');
+    addCombatLog('One target. Senedra is active for normal AI testing.','info');
     switchTab('battle');
     nextTurn();
     return true;
-  } catch (e) {
-    console.error('Senedra ability test failed:', e);
+  } catch(e) {
+    console.error(e);
     alert('Could not start the Senedra test.');
     return false;
   }
 }
+
 
 /* MEZSTORM_THUNDERCLAP_TEST_V167 */
 function startMezstormThunderclapTestV167() {
@@ -6779,7 +6778,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.68 — SENEDRA TEST</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.69 — SENEDRA TEST</div>
 
 <div id="mezstorm-test-build" style="text-align:center;font-size:11px;opacity:.65;margin:8px 0;">
   MEZSTORM TEST BUILD · Lightning / Storm abilities
@@ -6810,7 +6809,7 @@ document.addEventListener('keydown', (e) => {
 </button>
 
 <button id="senedra-ability-test-v168" type="button"
- onclick="startSenedraAbilityTestV168()"
+ onclick="startSenedraAbilityTestV169()"
  style="margin:6px;padding:8px 12px;border:1px solid rgba(180,180,255,.7);border-radius:8px;background:rgba(35,25,75,.9);color:inherit;">
 ✨ Test Senedra — 1 Target
 </button>
