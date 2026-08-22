@@ -1628,244 +1628,14 @@ Add/update paths only in ART_ASSETS above.
 </div>
 
 <script>
-
-
-
-
-/* MEZSTORM_THUNDERCLAP_TEST_V167 */
-function startMezstormThunderclapTestV167() {
-  try {
-    const zone = CODEX_GRIND_ZONES.unmappedRoad;
-    const base = zone && zone.encounters.find(e => e.id === 'road_wisp');
-    if (!base) { alert('The Road Wisp test enemy could not be found.'); return false; }
-
-    gameState.party.forEach(p => {
-      if (p.active && p.joined) {
-        p.currentHP = p.stats.hp;
-        p.currentMP = p.stats.mp;
-        p.buffs = [];
-        p.debuffs = [];
-      }
-    });
-
-    const target = {
-      ...JSON.parse(JSON.stringify(base)),
-      id: base.id + '_thunderclap_' + Date.now(),
-      name: base.name || 'Road Wisp',
-      hp: 5000, maxHP: 5000, currentHP: 5000
-    };
-
-    gameState.battleInputLocked=false;
-    gameState.battleState={
-      chapterId:null, grind:true,
-      mezstormThunderclapTest:true,
-      grindZoneId:'unmappedRoad',
-      grindEncounterId:'road_wisp',
-      boss:target,
-      turnIndex:-1, turnOrder:[],
-      round:1, log:[], active:true,
-      waitingForPlayer:false,
-      narrative:'Thunderclap test — one target.',
-      winner:null
-    };
-
-    const active=getActiveParty().filter(p=>p.currentHP>0);
-    gameState.battleState.turnOrder=active.map(p=>({
-      id:p.id,
-      initiative:rollDie(20)+getModifier(Number(p.stats.spd)||10)
-    })).sort((a,b)=>b.initiative-a.initiative);
-
-    addCombatLog('=== MEZSTORM THUNDERCLAP TEST ===','info');
-    addCombatLog('One target. Thunderclap test encounter started.','info');
-    switchTab('battle');
-    nextTurn();
-    return true;
-  } catch(e) {
-    console.error('Thunderclap test failed:',e);
-    alert('Could not start the Thunderclap test.');
-    return false;
-  }
+function startSenedraAbilitiesTestV172() {
+  window._senedraAbilityTestV172 = true;
+  startGrindingBattle('unmappedRoad','road_wisp');
 }
 
-/* MEZSTORM_TEMPEST_DIRECT_TEST_V161 */
-function startMezstormTempestTestV161() {
-  try {
-    const zone = CODEX_GRIND_ZONES.unmappedRoad;
-    const base = zone && zone.encounters.find(e => e.id === 'road_wisp');
-    if (!base) {
-      alert('The Unmapped Road test enemy could not be found.');
-      return false;
-    }
 
-    if (!Array.isArray(gameState.party)) gameState.party = [];
-    gameState.party.forEach(p => {
-      if (p.active && p.joined) {
-        p.currentHP = p.stats.hp;
-        p.currentMP = p.stats.mp;
-        p.buffs = [];
-        p.debuffs = [];
-      }
-    });
-    const activeParty = getActiveParty().filter(p => p.currentHP > 0);
-    if (!activeParty.length) {
-      alert('No active party members are available for the Tempest test.');
-      return false;
-    }
 
-    const targets = [1,2,3].map((n) => ({
-      id: base.id + '_tempest_' + n,
-      name: base.name + ' ' + n,
-      icon: base.icon,
-      hp: 5000,
-      maxHP: 5000,
-      ac: base.ac,
-      phaseIndex: 0,
-      phases: [{name: base.phase, damage: base.damage, desc: base.desc}]
-    }));
 
-    gameState.battleInputLocked = false;
-    gameState.battleState = {
-      chapterId:null,
-      grind:true,
-      mezstormAoETest:true,
-      mezstormAoESpellId:'tempest',
-      grindZoneId:'unmappedRoad',
-      grindEncounterId:'road_wisp',
-      boss:targets[0],
-      aoeTargets:targets,
-      turnIndex:-1,
-      turnOrder:[],
-      round:1,
-      log:[],
-      active:true,
-      waitingForPlayer:false,
-      narrative:'Three Road Wisp echoes gather for the Mezstorm Tempest test.',
-      winner:null
-    };
-
-    gameState.battleState.turnOrder=activeParty.map(p=>({
-      id:p.id,
-      initiative:rollDie(20)+getModifier(Number(p.stats.spd)||10)
-    })).sort((a,b)=>b.initiative-a.initiative);
-
-    addCombatLog('=== MEZSTORM TEMPEST TEST: 3 Road Wisp echoes ===','info');
-    addCombatLog('Tempest should strike all three targets.','info');
-    switchTab('battle');
-    nextTurn();
-    return true;
-  } catch (e) {
-    console.error('Mezstorm Tempest test failed:', e);
-    alert('Could not start the Tempest test.');
-    return false;
-  }
-}
-
-/* MEZSTORM_STORM_SURGE_DIRECT_TEST_V158 */
-function startMezstormStormSurgeDirectTestV158() {
-  try {
-    if (typeof startMezstormAoETestV156 === 'function') {
-      startMezstormAoETestV156();
-      setTimeout(function () {
-        const mez = (typeof gameState !== 'undefined' && gameState.party)
-          ? gameState.party.find(p => /mezstorm/i.test(p.name || ''))
-          : null;
-        if (!mez) {
-          alert('Mezstorm was not found in the current party.');
-          return;
-        }
-        const spell = (typeof SPELLS !== 'undefined' && SPELLS.stormSurge)
-          ? SPELLS.stormSurge
-          : null;
-        if (spell && typeof castSpell === 'function') {
-          castSpell(mez, spell);
-          return;
-        }
-        alert('Storm Surge direct-cast hook is not available in this build.');
-      }, 250);
-      return true;
-    }
-    alert('The 3-enemy test encounter is not available.');
-    return false;
-  } catch (e) {
-    console.error('Storm Surge direct test failed:', e);
-    alert('Could not start the Storm Surge direct test.');
-    return false;
-  }
-}
-
-/* MEZSTORM_AOE_EXPLORE_TEST_V155 */
-function startMezstormAoETestV156() {
-  try {
-    const zone = CODEX_GRIND_ZONES.unmappedRoad;
-    const base = zone && zone.encounters.find(e => e.id === 'road_wisp');
-    if (!base) {
-      alert('The Unmapped Road test enemy could not be found.');
-      return false;
-    }
-
-    if (!Array.isArray(gameState.party)) gameState.party = [];
-    gameState.party.forEach(p => {
-      if (p.active && p.joined) {
-        p.currentHP = p.stats.hp;
-        p.currentMP = p.stats.mp;
-        p.buffs = [];
-        p.debuffs = [];
-      }
-    });
-    const activeParty = getActiveParty().filter(p => p.currentHP > 0);
-    if (!activeParty.length) {
-      alert('No active party members are available for the AoE test.');
-      return false;
-    }
-
-    // Use the real Unmapped Road Road Wisp definition, cloned three times.
-    const targets = [1,2,3].map((n) => ({
-      id: base.id + '_aoe_' + n,
-      name: base.name + ' ' + n,
-      icon: base.icon,
-      hp: 5000,
-      maxHP: 5000,
-      ac: base.ac,
-      phaseIndex: 0,
-      phases: [{name: base.phase, damage: base.damage, desc: base.desc}]
-    }));
-
-    gameState.battleInputLocked = false;
-    gameState.battleState = {
-      chapterId:null,
-      grind:true,
-      mezstormAoETest:true,
-      mezstormAoESpellId:'storm_surge',
-      grindZoneId:'unmappedRoad',
-      grindEncounterId:'road_wisp',
-      boss:targets[0],
-      aoeTargets:targets,
-      turnIndex:-1,
-      turnOrder:[],
-      round:1,
-      log:[],
-      active:true,
-      waitingForPlayer:false,
-      narrative:'Three Road Wisp echoes gather for the Mezstorm AoE test.',
-      winner:null
-    };
-
-    gameState.battleState.turnOrder=activeParty.map(p=>({
-      id:p.id,
-      initiative:rollDie(20)+getModifier(Number(p.stats.spd)||10)
-    })).sort((a,b)=>b.initiative-a.initiative);
-
-    addCombatLog('=== MEZSTORM AOE TEST: 3 Road Wisp echoes ===','info');
-    addCombatLog('Storm Surge should strike all three targets.','info');
-    switchTab('battle');
-    nextTurn();
-    return true;
-  } catch (e) {
-    console.error('Mezstorm AoE test failed:', e);
-    alert('Could not start the 3-enemy AoE test.');
-    return false;
-  }
-}
 
 /* ENTER_CODEX_SAVE_FIX_V150 */
 function enterCodexV150() {
@@ -4782,6 +4552,24 @@ function companionAIAction(member, battle) {
     }
   }
 
+
+  // Senedra — Scout. During the dedicated test, exercise her real spellbook
+  // instead of falling back to basic attacks.
+  if (member.id === 'senedra' && window._senedraAbilityTestV172) {
+    if (mp >= 20 && !battle._senedraHunterMarkUsed) {
+      battle._senedraHunterMarkUsed = true;
+      return {type:'skill', skill:'hunter_mark'};
+    }
+    if (mp >= 10 && !battle._senedraRevealUsed) {
+      battle._senedraRevealUsed = true;
+      return {type:'skill', skill:'reveal_weakness'};
+    }
+    if (mp >= 15 && !battle._senedraTrailblazerUsed) {
+      battle._senedraTrailblazerUsed = true;
+      return {type:'skill', skill:'trailblazer'};
+    }
+  }
+
   return {type:'attack'};
 }
 
@@ -4792,6 +4580,36 @@ function executeCompanionSkill(member, skill, battle) {
   const spend = (amount) => {
     member.currentMP = Math.max(0, Number(member.currentMP || 0) - amount);
   };
+
+  if (member.id === 'senedra') {
+    if (skill === 'reveal_weakness' && member.currentMP >= 10) {
+      spend(10);
+      boss.ac = Math.max(0, Number(boss.ac || 0) - 3);
+      boss._revealWeaknessTurns = 2;
+      addCombatLog('👁️ ' + member.name.toUpperCase() + " — REVEAL WEAKNESS!", 'skill');
+      addCombatLog(boss.name + ' is exposed! AC -3 for 2 turns.', 'info');
+      battle.narrative = member.name + " exposes the enemy's weakness!";
+      return true;
+    }
+    if (skill === 'hunter_mark' && member.currentMP >= 20) {
+      spend(20);
+      boss._hunterMarkedTurns = 2;
+      addCombatLog('🎯 ' + member.name.toUpperCase() + " — HUNTER'S MARK!", 'skill');
+      addCombatLog(boss.name + ' is marked! Attacks against it deal +50% damage.', 'info');
+      battle.narrative = member.name + " marks the enemy for the party!";
+      return true;
+    }
+    if (skill === 'trailblazer' && member.currentMP >= 15) {
+      spend(15);
+      gameState.party.filter(p => p.active && p.currentHP > 0).forEach(p => {
+        p._trailblazerBonus = 5;
+      });
+      addCombatLog('🦌 ' + member.name.toUpperCase() + ' — TRAILBLAZER!', 'skill');
+      addCombatLog('Party SPD increased for 2 turns!', 'info');
+      battle.narrative = member.name + " leads the party forward!";
+      return true;
+    }
+  }
 
   if (member.id !== 'zaki') return false;
 
@@ -6718,40 +6536,12 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.70 — SENEDRA TEST</div>
-
-<div id="mezstorm-test-build" style="text-align:center;font-size:11px;opacity:.65;margin:8px 0;">
-  MEZSTORM TEST BUILD · Lightning / Storm abilities
-</div>
-
-<button id="mezstorm-aoe-test-button-v156" type="button"
- onclick="startMezstormAoETestV156()"
- style="margin:6px;padding:8px 12px;border:1px solid rgba(100,180,255,.55);border-radius:8px;background:rgba(20,50,80,.8);color:inherit;">
-⚡ Mezstorm AoE Test — 3 Road Wisps
-</button>
-
-<button id="mezstorm-storm-surge-test-v159" type="button"
- onclick="startMezstormAoETestV156()"
- style="margin:6px;padding:8px 12px;border:1px solid rgba(120,180,255,.65);border-radius:8px;background:rgba(20,50,80,.9);color:inherit;">
-⚡ Test Storm Surge — 3 Enemies
-</button>
-
-<button id="mezstorm-tempest-test-v160" type="button"
- onclick="startMezstormTempestTestV161()"
- style="margin:6px;padding:8px 12px;border:1px solid rgba(150,130,255,.7);border-radius:8px;background:rgba(35,25,75,.9);color:inherit;">
-⚡ Test Tempest — 3 Enemies
-</button>
-
-<button id="mezstorm-thunderclap-test-v167" type="button"
- onclick="startMezstormThunderclapTestV167()"
- style="margin:6px;padding:8px 12px;border:1px solid rgba(180,180,255,.7);border-radius:8px;background:rgba(35,25,75,.9);color:inherit;">
-🔊 Test Thunderclap — 1 Target
-</button>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.72 — SENEDRA ABILITIES TEST</div>
 
 <button id="senedra-ability-test-v170" type="button"
- onclick="startGrindingBattle('unmappedRoad','road_wisp')"
+ onclick="startSenedraAbilitiesTestV172()"
  style="margin:6px;padding:8px 12px;border:1px solid rgba(180,180,255,.7);border-radius:8px;background:rgba(35,25,75,.9);color:inherit;">
-✨ Test Senedra — 1 Target
+✨ Test Senedra Abilities — 1 Target
 </button>
 </body>
 </html>
