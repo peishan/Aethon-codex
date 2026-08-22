@@ -1628,119 +1628,8 @@ Add/update paths only in ART_ASSETS above.
 </div>
 
 <script>
-/* MEZSTORM_THUNDERCLAP_DIRECT_TEST_V164 */
-function startMezstormThunderclapDirectTestV164() {
-  try {
-    const zone = CODEX_GRIND_ZONES.unmappedRoad;
-    const base = zone && zone.encounters.find(e => e.id === 'road_wisp');
-    if (!base) { alert('The Road Wisp test enemy could not be found.'); return false; }
-
-    const mez = getActiveParty().find(p => p.id === 'mezstorm');
-    if (!mez) { alert('Mezstorm is not in the active party.'); return false; }
-
-    const target = {
-      ...JSON.parse(JSON.stringify(base)),
-      id: base.id + '_thunderclap_' + Date.now(),
-      name: base.name || 'Road Wisp',
-      hp: 5000,
-      maxHP: 5000,
-      currentHP: 5000
-    };
-
-    gameState.party.forEach(p => {
-      if (p.active && p.joined) {
-        p.currentHP = p.stats.hp;
-        p.currentMP = p.stats.mp;
-        p.buffs = [];
-        p.debuffs = [];
-      }
-    });
-
-    gameState.battleInputLocked=false;
-    gameState.battleState={
-      chapterId:null, grind:true,
-      mezstormForcedSpellId:'thunderclap',
-      thunderclapDirectTest:true,
-      grindZoneId:'unmappedRoad',
-      grindEncounterId:'road_wisp',
-      boss:target,
-      turnIndex:-1, turnOrder:[],
-      round:1, log:[], active:true,
-      waitingForPlayer:false,
-      narrative:'Direct Thunderclap test: one Road Wisp target.',
-      winner:null
-    };
-
-    const active=getActiveParty().filter(p=>p.currentHP>0);
-    gameState.battleState.turnOrder=active.map(p=>({
-      id:p.id,
-      initiative:rollDie(20)+getModifier(Number(p.stats.spd)||10)
-    })).sort((a,b)=>b.initiative-a.initiative);
-
-    addCombatLog('=== MEZSTORM THUNDERCLAP DIRECT TEST ===','info');
-    addCombatLog('One target. Thunderclap is the required spell.','info');
-    switchTab('battle');
-
-    // Directly execute the spell through the existing spell system.
-    const spell = (typeof mezstormSpellById === 'function')
-      ? mezstormSpellById('thunderclap') : null;
-    if (!spell) { alert('Thunderclap spell definition was not found.'); return false; }
-
-    if (typeof castMezstormSpell === 'function') {
-      castMezstormSpell(mez, spell, target);
-    } else if (typeof executeSpell === 'function') {
-      executeSpell(mez, spell, target);
-    } else if (typeof useSpell === 'function') {
-      useSpell(mez, spell, target);
-    } else {
-      // Fall back to normal turn processing with an explicit spell override.
-      nextTurn();
-    }
-    return true;
-  } catch(e) {
-    console.error('Direct Thunderclap test failed:',e);
-    alert('Could not start the direct Thunderclap test.');
-    return false;
-  }
-}
-
-/* MEZSTORM_THUNDERCLAP_TEST_V163 */
-function startMezstormThunderclapTestV163() {
-  try {
-    if (typeof startMezstormAoETestV156 === 'function') {
-      startMezstormAoETestV156();
-    } else if (typeof startMezstormAoETestV155 === 'function') {
-      startMezstormAoETestV155();
-    } else {
-      alert('The proven 3-enemy test encounter is not available.');
-      return false;
-    }
-
-    setTimeout(function () {
-      try {
-        if (!gameState || !gameState.battleState) {
-          alert('The test battle did not start.');
-          return;
-        }
-        gameState.battleState.mezstormForcedSpellId = 'thunderclap';
-        gameState.battleState.thunderclapTest = true;
-        addCombatLog('=== MEZSTORM THUNDERCLAP TEST ===','info');
-        addCombatLog('Thunderclap is selected for the next Mezstorm action.','info');
-      } catch (e) {
-        console.error(e);
-        alert('Thunderclap test setup failed.');
-      }
-    }, 300);
-    return true;
-  } catch (e) {
-    console.error('Thunderclap test failed:', e);
-    alert('Could not start the Thunderclap test.');
-    return false;
-  }
-}
-
-/* MEZSTORM_TEMPEST_DIRECT_TEST_V161 */
-function startMezstormTempestTestV161() {
+/* MEZSTORM_THUNDERCLAP_TEST_V165 */
+function startMezstormThunderclapTestV165() {
   try {
     const zone = CODEX_GRIND_ZONES.unmappedRoad;
     const base = zone && zone.encounters.find(e => e.id === 'road_wisp');
@@ -1780,7 +1669,7 @@ function startMezstormTempestTestV161() {
       chapterId:null,
       grind:true,
       mezstormAoETest:true,
-      mezstormAoESpellId:'tempest',
+      mezstormAoESpellId:'thunderclap',
       grindZoneId:'unmappedRoad',
       grindEncounterId:'road_wisp',
       boss:targets[0],
@@ -1800,8 +1689,8 @@ function startMezstormTempestTestV161() {
       initiative:rollDie(20)+getModifier(Number(p.stats.spd)||10)
     })).sort((a,b)=>b.initiative-a.initiative);
 
-    addCombatLog('=== MEZSTORM TEMPEST TEST: 3 Road Wisp echoes ===','info');
-    addCombatLog('Tempest should strike all three targets.','info');
+    addCombatLog('=== MEZSTORM THUNDERCLAP TEST: 3 Road Wisp echoes ===','info');
+    addCombatLog('Thunderclap should strike the selected target and apply stun.','info');
     switchTab('battle');
     nextTurn();
     return true;
@@ -5143,16 +5032,6 @@ function aiAction(member) {
 
   if (member.id === 'mezstorm') {
     initializeMezstormSpellbookV1();
-
-    if (battle.mezstormForcedSpellId === 'thunderclap') {
-      const spell = mezstormSpellById('thunderclap');
-      if (spell && member.currentMP >= spell.mp) {
-        spendMP('mezstorm', spell.mp);
-        battle.boss.stunnedRounds = 1;
-        addCombatLog('🔊 Mezstorm casts Thunderclap! ' + battle.boss.name + ' is stunned!', 'info');
-        return;
-      }
-    }
     const mezLevel = Number(gameState.level || 1);
 
     // Dedicated v12.56 AoE test: use the first known multi-target spell and
@@ -5229,11 +5108,6 @@ function bossAction() {
   if (!battle || !battle.active) return;
 
   const boss = battle.boss;
-  if (boss.stunnedRounds > 0) {
-    boss.stunnedRounds--;
-    addCombatLog(boss.name + ' is stunned and loses its action!', 'info');
-    return;
-  }
   const phase = boss.phases[boss.phaseIndex] || boss.phases[0];
   const activeParty = getActiveParty();
 
@@ -6785,7 +6659,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.64 — MEZSTORM THUNDERCLAP DIRECT TEST</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.65 — MEZSTORM THUNDERCLAP TEST — MEZSTORM THUNDERCLAP TEST</div>
 
 <div id="mezstorm-test-build" style="text-align:center;font-size:11px;opacity:.65;margin:8px 0;">
   MEZSTORM TEST BUILD · Lightning / Storm abilities
@@ -6803,22 +6677,10 @@ document.addEventListener('keydown', (e) => {
 ⚡ Test Storm Surge — 3 Enemies
 </button>
 
-<button id="mezstorm-tempest-test-v160" type="button"
- onclick="startMezstormTempestTestV161()"
+<button id="mezstorm-thunderclap-test-v165" type="button"
+ onclick="startMezstormThunderclapTestV165()"
  style="margin:6px;padding:8px 12px;border:1px solid rgba(150,130,255,.7);border-radius:8px;background:rgba(35,25,75,.9);color:inherit;">
-⚡ Test Tempest — 3 Enemies
-</button>
-
-<button id="mezstorm-thunderclap-test-v162" type="button"
- onclick="startMezstormThunderclapTestV163()"
- style="margin:6px;padding:8px 12px;border:1px solid rgba(180,180,255,.7);border-radius:8px;background:rgba(35,25,75,.9);color:inherit;">
-🔊 Test Thunderclap — Stun
-</button>
-
-<button id="mezstorm-thunderclap-direct-v164" type="button"
- onclick="startMezstormThunderclapDirectTestV164()"
- style="margin:6px;padding:8px 12px;border:1px solid rgba(180,180,255,.7);border-radius:8px;background:rgba(35,25,75,.9);color:inherit;">
-🔊 Test Thunderclap Directly — 1 Target
+⚡ Test Thunderclap — 1 Target
 </button>
 </body>
 </html>
