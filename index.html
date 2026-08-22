@@ -1628,8 +1628,8 @@ Add/update paths only in ART_ASSETS above.
 </div>
 
 <script>
-/* MEZSTORM_TEMPEST_DIRECT_TEST_V160 */
-function startMezstormTempestTestV160() {
+/* MEZSTORM_TEMPEST_DIRECT_TEST_V161 */
+function startMezstormTempestTestV161() {
   try {
     const zone = CODEX_GRIND_ZONES.unmappedRoad;
     const base = zone && zone.encounters.find(e => e.id === 'road_wisp');
@@ -1644,19 +1644,24 @@ function startMezstormTempestTestV160() {
         p.currentHP = p.stats.hp;
         p.currentMP = p.stats.mp;
         p.buffs = [];
+        p.debuffs = [];
       }
     });
+    const activeParty = getActiveParty().filter(p => p.currentHP > 0);
+    if (!activeParty.length) {
+      alert('No active party members are available for the Tempest test.');
+      return false;
+    }
 
-    const targets = [1,2,3].map((n,i) => ({
-      ...JSON.parse(JSON.stringify(base)),
-      id: `${base.id}-tempest-${Date.now()}-${i}`,
-      name: base.name || 'Road Wisp',
-      currentHP: base.hp || 70,
-      maxHP: base.hp || 70,
-      hp: base.hp || 70,
-      ac: base.ac || 12,
-      xp: 0,
-      gold: 0
+    const targets = [1,2,3].map((n) => ({
+      id: base.id + '_tempest_' + n,
+      name: base.name + ' ' + n,
+      icon: base.icon,
+      hp: 5000,
+      maxHP: 5000,
+      ac: base.ac,
+      phaseIndex: 0,
+      phases: [{name: base.phase, damage: base.damage, desc: base.desc}]
     }));
 
     gameState.battleInputLocked = false;
@@ -1679,8 +1684,7 @@ function startMezstormTempestTestV160() {
       winner:null
     };
 
-    const activeParty = gameState.party.filter(p => p.active && p.joined && p.currentHP > 0);
-    gameState.battleState.turnOrder = activeParty.map(p => ({
+    gameState.battleState.turnOrder=activeParty.map(p=>({
       id:p.id,
       initiative:rollDie(20)+getModifier(Number(p.stats.spd)||10)
     })).sort((a,b)=>b.initiative-a.initiative);
@@ -6655,7 +6659,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.60 — MEZSTORM TEMPEST TEST</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.61 — MEZSTORM TEMPEST TEST</div>
 
 <div id="mezstorm-test-build" style="text-align:center;font-size:11px;opacity:.65;margin:8px 0;">
   MEZSTORM TEST BUILD · Lightning / Storm abilities
@@ -6674,7 +6678,7 @@ document.addEventListener('keydown', (e) => {
 </button>
 
 <button id="mezstorm-tempest-test-v160" type="button"
- onclick="startMezstormTempestTestV160()"
+ onclick="startMezstormTempestTestV161()"
  style="margin:6px;padding:8px 12px;border:1px solid rgba(150,130,255,.7);border-radius:8px;background:rgba(35,25,75,.9);color:inherit;">
 ⚡ Test Tempest — 3 Enemies
 </button>
