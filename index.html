@@ -1628,6 +1628,22 @@ Add/update paths only in ART_ASSETS above.
 </div>
 
 <script>
+function startAisyahCoupDeGraceTestV180() {
+  window._aisyahCoupDeGraceTestV180 = true;
+  startGrindingBattle('unmappedRoad','road_wisp');
+  setTimeout(() => {
+    const b = gameState.battleState;
+    const boss = b && b.boss;
+    if (boss) {
+      const max = Number(boss.maxHP || boss.hp || 5000);
+      boss.maxHP = max;
+      boss.hp = Math.max(1, Math.floor(max * 0.20));
+      boss.currentHP = boss.hp;
+      addCombatLog('⚔️ Test target weakened to 20% HP for Coup de Grace.', 'info');
+    }
+  }, 100);
+}
+
 function startAisyahCoupDeGraceTestV178() {
   window._aisyahCoupDeGraceTestV179 = true;
   startGrindingBattle('unmappedRoad','road_wisp');
@@ -4572,18 +4588,19 @@ function companionAIAction(member, battle) {
   // instead of falling back to basic attacks.
   if (member.id === 'senedra' && window._senedraAbilityTestV172) {
 
-  }
-
-  if (member.id === 'aisyah' && window._aisyahCoupDeGraceTestV179) {
+  }  
+  // Aisyah — Coup de Grace test: target is deliberately weakened by the test
+  // launcher, then the actual companion AI selects the existing skill executor.
+  if (member.id === 'aisyah' && window._aisyahCoupDeGraceTestV180) {
     const hp = Number(battle.boss?.currentHP ?? battle.boss?.hp ?? 0);
     const maxHp = Number(battle.boss?.maxHP ?? battle.boss?.hp ?? 1);
-    if (hp <= maxHp * 0.25 && !battle._aisyahCoupDeGraceUsed) {
+    if (hp > 0 && hp <= maxHp * 0.25 && !battle._aisyahCoupDeGraceUsed) {
       battle._aisyahCoupDeGraceUsed = true;
       return {type:'skill', skill:'coup_de_grace'};
     }
   }
 
-  return {type:'attack'};
+return {type:'attack'};
 }
 
 
@@ -6568,7 +6585,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.79 — AISYAH COUP DE GRACE IMPLEMENTED TEST — SENEDRA FINAL ABILITY TEST</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.80 — AISYAH COUP DE GRACE TEST — SENEDRA FINAL ABILITY TEST</div>
 
 <button id="senedra-ability-test-v170" type="button"
  onclick="startSenedraAbilitiesTestV172()"
@@ -6576,8 +6593,8 @@ document.addEventListener('keydown', (e) => {
 ✨ Test Senedra — Final Ability
 </button>
 
-<button id="aisyah-coup-de-grace-test-v178" type="button"
- onclick="startAisyahCoupDeGraceTestV178()"
+<button id="aisyah-coup-de-grace-test-v180" type="button"
+ onclick="startAisyahCoupDeGraceTestV180()"
  style="margin:6px;padding:8px 12px;border:1px solid rgba(180,180,255,.7);border-radius:8px;background:rgba(35,25,75,.9);color:inherit;">
 🗡️ Test Aisyah — Coup de Grace
 </button>
