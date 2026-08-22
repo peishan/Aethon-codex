@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Aethon Codex - Legends of Daybreak (Unified v12.57 — Mezstorm Storm Surge Test</title>
+<title>The Aethon Codex - Legends of Daybreak (Unified v12.58 — Mezstorm Storm Surge Direct Test</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
@@ -1628,6 +1628,39 @@ Add/update paths only in ART_ASSETS above.
 </div>
 
 <script>
+/* MEZSTORM_STORM_SURGE_DIRECT_TEST_V158 */
+function startMezstormStormSurgeDirectTestV158() {
+  try {
+    if (typeof startMezstormAoETestV155 === 'function') {
+      startMezstormAoETestV155();
+      setTimeout(function () {
+        const mez = (typeof gameState !== 'undefined' && gameState.party)
+          ? gameState.party.find(p => /mezstorm/i.test(p.name || ''))
+          : null;
+        if (!mez) {
+          alert('Mezstorm was not found in the current party.');
+          return;
+        }
+        const spell = (typeof SPELLS !== 'undefined' && SPELLS.stormSurge)
+          ? SPELLS.stormSurge
+          : null;
+        if (spell && typeof castSpell === 'function') {
+          castSpell(mez, spell);
+          return;
+        }
+        alert('Storm Surge direct-cast hook is not available in this build.');
+      }, 250);
+      return true;
+    }
+    alert('The 3-enemy test encounter is not available.');
+    return false;
+  } catch (e) {
+    console.error('Storm Surge direct test failed:', e);
+    alert('Could not start the Storm Surge direct test.');
+    return false;
+  }
+}
+
 /* MEZSTORM_AOE_EXPLORE_TEST_V155 */
 function startMezstormAoETestV156() {
   try {
@@ -6550,7 +6583,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.57 — MEZSTORM STORM SURGE TEST</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.58 — MEZSTORM STORM SURGE DIRECT TEST</div>
 
 <div id="mezstorm-test-build" style="text-align:center;font-size:11px;opacity:.65;margin:8px 0;">
   MEZSTORM TEST BUILD · Lightning / Storm abilities
@@ -6560,6 +6593,12 @@ document.addEventListener('keydown', (e) => {
  onclick="startMezstormAoETestV156()"
  style="margin:6px;padding:8px 12px;border:1px solid rgba(100,180,255,.55);border-radius:8px;background:rgba(20,50,80,.8);color:inherit;">
 ⚡ Mezstorm AoE Test — 3 Road Wisps
+</button>
+
+<button id="mezstorm-storm-surge-direct-v158" type="button"
+ onclick="startMezstormStormSurgeDirectTestV158()"
+ style="margin:6px;padding:8px 12px;border:1px solid rgba(120,180,255,.65);border-radius:8px;background:rgba(20,50,80,.9);color:inherit;">
+⚡ Test Storm Surge Directly — 3 Enemies
 </button>
 </body>
 </html>
