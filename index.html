@@ -1628,6 +1628,16 @@ Add/update paths only in ART_ASSETS above.
 </div>
 
 <script>
+function startAisyahSneakAttackTestV177() {
+  window._aisyahSneakAttackTestV177 = true;
+  startGrindingBattle('unmappedRoad','road_wisp');
+}
+
+function startAisyahAbilityTestV176() {
+  window._aisyahAbilityTestV176 = true;
+  startGrindingBattle('unmappedRoad','road_wisp');
+}
+
 function startSenedraAbilitiesTestV172() {
   window._senedraAbilityTestV172 = true;
   startGrindingBattle('unmappedRoad','road_wisp');
@@ -6525,12 +6535,18 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.75 — SENEDRA FINAL ABILITY TEST</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.77 — AISYAH SNEAK ATTACK TEST — SENEDRA FINAL ABILITY TEST</div>
 
 <button id="senedra-ability-test-v170" type="button"
  onclick="startSenedraAbilitiesTestV172()"
  style="margin:6px;padding:8px 12px;border:1px solid rgba(180,180,255,.7);border-radius:8px;background:rgba(35,25,75,.9);color:inherit;">
 ✨ Test Senedra — Final Ability
+</button>
+
+<button id="aisyah-sneak-attack-test-v177" type="button"
+ onclick="startAisyahSneakAttackTestV177()"
+ style="margin:6px;padding:8px 12px;border:1px solid rgba(180,180,255,.7);border-radius:8px;background:rgba(35,25,75,.9);color:inherit;">
+🗡️ Test Aisyah — Sneak Attack
 </button>
 </body>
 </html>
