@@ -1026,6 +1026,13 @@ body {
 .explore-container.active{display:block}
 .explore-subtitle{font-family:Cinzel,serif;color:var(--gold-light);font-size:.9rem;margin-top:-4px}
 .explore-note{color:var(--parchment-dark);line-height:1.45}
+
+.grind-zone-card{border:1px solid rgba(212,168,67,.28);background:rgba(13,31,51,.62);border-radius:10px;padding:16px;margin:12px 0}
+.grind-zone-title{color:var(--gold-light);font-family:Cinzel,serif;font-size:1.1em;letter-spacing:.04em}
+.grind-zone-copy{color:var(--parchment-dark);margin:8px 0 14px;line-height:1.45}
+.grind-respawn{color:var(--parchment);padding:12px;border-left:3px solid var(--gold-light);background:rgba(212,168,67,.06)}
+.grind-respawn strong{color:var(--gold-light);font-size:1.15em}
+.grind-zone-note{color:var(--parchment-dark);font-style:italic;margin-top:10px;font-size:.9em}
 .explore-status{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
 .explore-status span{font-size:.75rem;border:1px solid rgba(212,168,67,.18);padding:5px 7px;border-radius:6px}
 .explore-locked{padding:14px;border:1px dashed rgba(212,168,67,.25);border-radius:8px;color:var(--parchment-dark)}
@@ -1581,13 +1588,13 @@ Add/update paths only in ART_ASSETS above.
     <div class="panel-title">The Unmapped Road</div>
     <div class="explore-subtitle">Post-Book 4 Frontier · Repeatable Exploration</div>
     <p class="explore-note">
-      A new road beyond the completed Book 4 journey. Monsters here return after each encounter,
-      allowing deliberate leveling, gold farming and equipment hunting before the next story gate.
+      A road beyond the completed Book 4 journey. Earlier bosses are drawn back one at a time,
+      with a deliberate respawn delay between encounters. Repeat victories award XP and gold only.
     </p>
     <div class="explore-status">
       <span>Zone: The Unmapped Road</span>
-      <span>Respawn: Automatic</span>
-      <span>Story: Optional</span>
+      <span>Respawn: 3 minutes</span>
+      <span>Rewards: XP + Gold</span>
     </div>
     <div id="grindEncounterList"></div>
   </div>
@@ -1645,25 +1652,6 @@ function getTraderPriceWithHaggling(basePrice) {
   const pct = getAisyahHagglingDiscountPercent();
   return Math.max(1, Math.floor(base * (1 - pct / 100)));
 }
-
-function startAisyahCoupDeGraceTestV178() {
-  window._aisyahCoupDeGraceTestV179 = true;
-  startGrindingBattle('unmappedRoad','road_wisp');
-}
-
-function startAisyahAbilityTestV176() {
-  window._aisyahAbilityTestV176 = true;
-  startGrindingBattle('unmappedRoad','road_wisp');
-}
-
-function startSenedraAbilitiesTestV172() {
-  window._senedraAbilityTestV172 = true;
-  startGrindingBattle('unmappedRoad','road_wisp');
-}
-
-
-
-
 
 /* ENTER_CODEX_SAVE_FIX_V150 */
 function enterCodexV150() {
@@ -5514,7 +5502,7 @@ function renderBattle() {
     if (battle.winner === 'party') {
       html += '<div style="text-align:center;margin-top:20px;">';
       html += '<h3 style="color:var(--green-accent);font-family:Cinzel,serif;">VICTORY!</h3>';
-      html += '<p style="color:var(--parchment);">The ' + boss.name + ' has been defeated!</p>';
+      html += '<p style="color:var(--parchment);">' + boss.name + ' has been defeated!</p>';
       if (battle.grind) {
         html += '<p style="color:var(--parchment-dark);">The road will repopulate. You can return for another encounter.</p>';
         html += '<button class="btn-quest complete" onclick="switchTab(\'explore\')" style="margin-top:12px;">Return to The Unmapped Road</button>';
@@ -5732,124 +5720,261 @@ function renderTrader() {
    rewards and encounter names below are Codex gameplay design,
    not additional Book 4 story chapters.
    ============================================================ */
-const CODEX_GRIND_ZONES = {
-  unmappedRoad: {
-    name:'The Unmapped Road',
-    unlockRule:()=>gameState.completedChapters.includes(70) || Boolean(gameState.book4Complete) || Number(gameState.currentBook||1)>=4 || Number(gameState.level||1)>=20,
-    encounters:[
-      {id:'road_wisp',name:'Road Wisp',icon:'✦',hp:70,ac:12,damage:4,xp:90,gold:18,
-       phase:'Flickering',desc:'A wandering spark left behind by the repaired road.'},
-      {id:'fracture_hound',name:'Fracture Hound',icon:'🐺',hp:110,ac:13,damage:6,xp:135,gold:26,
-       phase:'Unstable',desc:'A creature that follows the seams between paths.'},
-      {id:'echo_guardian',name:'Echo Guardian',icon:'⚔️',hp:160,ac:15,damage:8,xp:210,gold:40,
-       phase:'Resolute',desc:'A stronger sentinel encountered deeper along the road.'}
+
+/* ============================================================
+   POST-BOOK 4 FRONTIER — v12.86
+   The Unmapped Road is now a real repeatable boss zone.
+   A boss appears, can be defeated for XP + gold only, then the
+   road enters a 3-minute respawn cooldown before a new random
+   earlier boss appears.
+   ============================================================ */
+const CODEX_UNMAPPED_ROAD_RESPAWN_MS = 3 * 60 * 1000;
+
+const CODEX_UNMAPPED_ROAD_BOSS_POOL = [
+  {
+    id:'astral_devourer', chapterId:31, name:'Astral Devourer', icon:'👻',
+    hp:120, ac:15, xp:600, gold:250,
+    phaseList:[
+      {name:'Material',threshold:80,ac:15,attack:'Possibility Drain',damage:12,desc:'The Devourer feeds on unrealized futures.'},
+      {name:'Astral',threshold:50,ac:18,attack:'Consume Paths',damage:18,desc:'It shifts to astral form, becoming harder to hit.'},
+      {name:'Void',threshold:20,ac:20,attack:'Primordial Hunger',damage:25,desc:'Desperate and ravenous, it attacks with reckless force.'}
+    ]
+  },
+  {
+    id:'infernal_tyrant', chapterId:32, name:'Infernal Tyrant', icon:'🔥',
+    hp:140, ac:16, xp:650, gold:275,
+    phaseList:[
+      {name:'Devotion',threshold:75,ac:16,attack:'Smothering Embrace',damage:14,desc:'The Tyrant wraps the party in suffocating flame.'},
+      {name:'Fury',threshold:45,ac:14,attack:'Burning Wrath',damage:22,desc:'Rejected devotion becomes destructive rage.'},
+      {name:'Ashes',threshold:15,ac:18,attack:'Final Sacrifice',damage:30,desc:'The Tyrant unleashes one final destructive act.'}
+    ]
+  },
+  {
+    id:'veilshaper', chapterId:33, name:'The Veilshaper', icon:'🔮',
+    hp:130, ac:17, xp:700, gold:300,
+    phaseList:[
+      {name:'Reflection',threshold:70,ac:17,attack:'Mirror Strike',damage:15,desc:'The Veilshaper reflects attacks through alternate realities.'},
+      {name:'Possibility',threshold:40,ac:19,attack:'What Could Be',damage:20,desc:'Visions of alternate paths distract the party.'},
+      {name:'Truth',threshold:10,ac:15,attack:'Absolute Reality',damage:28,desc:'The illusions fall away and raw reality strikes.'}
+    ]
+  },
+  {
+    id:'eternal_frost_queen', chapterId:34, name:'Eternal Frost Queen', icon:'❄️',
+    hp:150, ac:18, xp:650, gold:275,
+    phaseList:[
+      {name:'Preservation',threshold:75,ac:18,attack:'Frozen Touch',damage:16,desc:'The Queen tries to preserve the party in ice.'},
+      {name:'Despair',threshold:50,ac:16,attack:'Bitter Wind',damage:20,desc:'Her sorrow manifests as cutting frozen winds.'},
+      {name:'Thaw',threshold:25,ac:14,attack:'Melting Rage',damage:24,desc:'As the ice melts, the Queen fights with renewed fury.'}
     ]
   }
-};
+];
 
-function renderExplore() {
-  const list=document.getElementById('grindEncounterList');
-  if(!list)return;
-  const zone=CODEX_GRIND_ZONES.unmappedRoad;
-  const unlocked=zone.unlockRule();
-  if(!unlocked){
-    list.innerHTML='<div class="explore-locked">The Unmapped Road becomes available after the Book 4 journey.</div>';
-    return;
+function getUnmappedRoadState() {
+  if (!gameState.unmappedRoad) {
+    gameState.unmappedRoad = {
+      currentBossId: null,
+      nextSpawnAt: 0
+    };
   }
-  list.innerHTML=zone.encounters.map((e,i)=>
-    '<div class="grind-encounter">'+
-      '<div><div class="grind-name">'+e.icon+' '+e.name+'</div>'+
-      '<div class="grind-meta">HP '+e.hp+' · AC '+e.ac+' · XP '+e.xp+' · '+e.gold+'G</div>'+
-      '<div class="grind-desc">'+e.desc+'</div></div>'+
-      '<button class="grind-fight" onclick="startGrindingBattle(\'unmappedRoad\',\''+e.id+'\')">Fight</button>'+
-    '</div>'
-  ).join('');
+  if (!Number.isFinite(Number(gameState.unmappedRoad.nextSpawnAt))) {
+    gameState.unmappedRoad.nextSpawnAt = 0;
+  }
+  return gameState.unmappedRoad;
 }
 
-function startGrindingBattle(zoneId,encounterId) {
-  const zone=CODEX_GRIND_ZONES[zoneId];
-  const encounter=zone && zone.encounters.find(x=>x.id===encounterId);
-  if(!encounter || !zone.unlockRule())return false;
+function getUnmappedRoadBoss(id) {
+  return CODEX_UNMAPPED_ROAD_BOSS_POOL.find(b => b.id === id) || null;
+}
 
-  const san=getPartyMember('san');
-  if(!san)return false;
+function chooseUnmappedRoadBoss() {
+  return CODEX_UNMAPPED_ROAD_BOSS_POOL[
+    Math.floor(Math.random() * CODEX_UNMAPPED_ROAD_BOSS_POOL.length)
+  ];
+}
 
-  // Restore active party between repeatable encounters.
-  gameState.party.forEach(p=>{
-    if(p.active && p.joined){
-      p.currentHP=p.stats.hp;
-      p.currentMP=p.stats.mp;
-      p.buffs=[]; p.debuffs=[];
+function ensureUnmappedRoadSpawn() {
+  const state = getUnmappedRoadState();
+  const now = Date.now();
+
+  if (state.currentBossId) {
+    const current = getUnmappedRoadBoss(state.currentBossId);
+    if (current) return current;
+    state.currentBossId = null;
+  }
+
+  if (now < Number(state.nextSpawnAt || 0)) return null;
+
+  const boss = chooseUnmappedRoadBoss();
+  state.currentBossId = boss.id;
+  state.nextSpawnAt = 0;
+  return boss;
+}
+
+function formatUnmappedRoadCountdown(ms) {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  return minutes + ':' + String(seconds).padStart(2, '0');
+}
+
+function renderExplore() {
+  const list = document.getElementById('grindEncounterList');
+  if (!list) return;
+
+  if (window._unmappedRoadRespawnTimer) {
+    clearInterval(window._unmappedRoadRespawnTimer);
+    window._unmappedRoadRespawnTimer = null;
+  }
+
+  const unlocked = gameState.completedChapters.includes(70) ||
+    Boolean(gameState.book4Complete) ||
+    Number(gameState.currentBook || 1) >= 4 ||
+    Number(gameState.level || 1) >= 20;
+
+  if (!unlocked) {
+    list.innerHTML = '<div class="explore-locked">The Unmapped Road becomes available after the Book 4 journey.</div>';
+    return;
+  }
+
+  const state = getUnmappedRoadState();
+  const boss = ensureUnmappedRoadSpawn();
+
+  if (boss) {
+    list.innerHTML =
+      '<div class="grind-zone-card">' +
+        '<div class="grind-zone-title">⚔️ A Boss Has Appeared</div>' +
+        '<div class="grind-zone-copy">The repaired road has drawn an earlier foe back into the world.</div>' +
+        '<div class="grind-encounter">' +
+          '<div>' +
+            '<div class="grind-name">' + boss.icon + ' ' + boss.name + '</div>' +
+            '<div class="grind-meta">HP ' + boss.hp + ' · AC ' + boss.ac + ' · XP ' + boss.xp + ' · ' + boss.gold + 'G</div>' +
+            '<div class="grind-desc">Repeatable encounter. Victory grants XP and gold only — no boss equipment or drops.</div>' +
+          '</div>' +
+          '<button class="grind-fight" onclick="startGrindingBattle(\'unmappedRoad\',\'boss\')">Fight</button>' +
+        '</div>' +
+      '</div>';
+    return;
+  }
+
+  const remaining = Math.max(0, Number(state.nextSpawnAt || 0) - Date.now());
+  list.innerHTML =
+    '<div class="grind-zone-card">' +
+      '<div class="grind-zone-title">🌌 The Road Is Quiet</div>' +
+      '<div class="grind-zone-copy">The last boss has been defeated. Another earlier boss will eventually be drawn back through the road.</div>' +
+      '<div class="grind-respawn">Next boss encounter in <strong id="unmappedRoadCountdown">' +
+        formatUnmappedRoadCountdown(remaining) +
+      '</strong></div>' +
+      '<div class="grind-zone-note">Respawn is deliberately delayed. Each encounter is randomly selected.</div>' +
+    '</div>';
+
+  window._unmappedRoadRespawnTimer = setInterval(() => {
+    const el = document.getElementById('unmappedRoadCountdown');
+    if (!el) {
+      clearInterval(window._unmappedRoadRespawnTimer);
+      window._unmappedRoadRespawnTimer = null;
+      return;
+    }
+    const left = Math.max(0, Number(state.nextSpawnAt || 0) - Date.now());
+    el.textContent = formatUnmappedRoadCountdown(left);
+    if (left <= 0) {
+      clearInterval(window._unmappedRoadRespawnTimer);
+      window._unmappedRoadRespawnTimer = null;
+      renderExplore();
+    }
+  }, 1000);
+}
+
+function startGrindingBattle(zoneId, encounterId) {
+  if (zoneId !== 'unmappedRoad') return false;
+
+  const zone = CODEX_UNMAPPED_ROAD_BOSS_POOL;
+  const state = getUnmappedRoadState();
+  const boss = ensureUnmappedRoadSpawn();
+
+  if (!boss || encounterId !== 'boss' || state.currentBossId !== boss.id) {
+    showNotification('No boss is currently available on The Unmapped Road.');
+    renderExplore();
+    return false;
+  }
+
+  gameState.party.forEach(p => {
+    if (p.active && p.joined) {
+      p.currentHP = p.stats.hp;
+      p.currentMP = p.stats.mp;
+      p.buffs = [];
+      p.debuffs = [];
     }
   });
 
-  const activeParty=getActiveParty().filter(p=>p.currentHP>0);
-  gameState.battleInputLocked=false;
-  gameState.battleState={
-    chapterId:null,
-    grind:true,
-    grindZoneId:zoneId,
-    grindEncounterId:encounterId,
-    boss:{
-      name:encounter.name,
-      icon:encounter.icon,
-      hp:encounter.hp,
-      maxHP:encounter.hp,
-      ac:encounter.ac,
-      phaseIndex:0,
-      phases:[{name:encounter.phase,damage:encounter.damage,desc:encounter.desc}]
+  const activeParty = getActiveParty().filter(p => p.currentHP > 0);
+  gameState.battleInputLocked = false;
+  gameState.battleState = {
+    chapterId: null,
+    grind: true,
+    grindZoneId: 'unmappedRoad',
+    grindEncounterId: boss.id,
+    boss: {
+      name: boss.name,
+      icon: boss.icon,
+      hp: boss.hp,
+      maxHP: boss.hp,
+      ac: boss.ac,
+      phaseIndex: 0,
+      phases: boss.phaseList
     },
-    turnIndex:-1,turnOrder:[],round:1,log:[],
-    active:true,waitingForPlayer:false,narrative:'A repeatable encounter begins.',
-    winner:null
+    turnIndex: -1,
+    turnOrder: [],
+    round: 1,
+    log: [],
+    active: true,
+    waitingForPlayer: false,
+    narrative: boss.name + ' returns along The Unmapped Road.',
+    winner: null
   };
 
-  gameState.battleState.turnOrder=activeParty.map(p=>({
-    id:p.id,initiative:rollDie(20)+getModifier(Number(p.stats.spd)||10)
-  })).sort((a,b)=>b.initiative-a.initiative);
+  gameState.battleState.turnOrder = activeParty.map(p => ({
+    id: p.id,
+    initiative: rollDie(20) + getModifier(Number(p.stats.spd) || 10)
+  })).sort((a,b) => b.initiative - a.initiative);
 
-  if(!gameState.battleState.turnOrder.length){
-    gameState.battleState=null;
+  if (!gameState.battleState.turnOrder.length) {
+    gameState.battleState = null;
     showNotification('No active party members are available.');
     return false;
   }
 
-  addCombatLog('=== '+encounter.name+' appears on The Unmapped Road! ===','info');
+  addCombatLog('=== ' + boss.name + ' appears on The Unmapped Road! ===', 'info');
   switchTab('battle');
   nextTurn();
   return true;
 }
 
 function finishGrindingBattle() {
-  const battle=gameState.battleState;
-  if(!battle || !battle.grind)return;
-  const zone=CODEX_GRIND_ZONES[battle.grindZoneId];
-  const encounter=zone && zone.encounters.find(x=>x.id===battle.grindEncounterId);
-  if(!encounter)return;
+  const battle = gameState.battleState;
+  if (!battle || !battle.grind) return;
 
-  addXP(encounter.xp);
-  gameState.gold=Number(gameState.gold||0)+Number(encounter.gold||0);
+  const boss = getUnmappedRoadBoss(battle.grindEncounterId);
+  if (!boss) return;
 
-  // Small chance of a repeatable monster drop. Boss loot remains separate.
-  if(Math.random()<0.18){
-    const drops=getCodexLoot('monster');
-    if(drops.length){
-      const drop=drops[Math.floor(Math.random()*drops.length)];
-      codexEnsureEquipmentInventory().push({...drop,acquiredFrom:'monster',repeatable:true});
-      addCombatLog('Monster drop: '+drop.name+'!','loot');
-      showNotification('Loot acquired: '+drop.name);
-    }
-  }
+  addXP(boss.xp);
+  gameState.gold = Number(gameState.gold || 0) + Number(boss.gold || 0);
 
-  addCombatLog('Reward: +'+encounter.xp+' XP · +'+encounter.gold+'G','heal');
-  battle.active=false;
-  battle.winner='party';
-  battle.waitingForPlayer=false;
-  gameState.battleInputLocked=false;
+  // IMPORTANT: Repeatable frontier bosses grant XP + gold only.
+  // No monster drops and no boss equipment are awarded here.
+  addCombatLog('Reward: +' + boss.xp + ' XP · +' + boss.gold + 'G', 'heal');
+
+  const state = getUnmappedRoadState();
+  state.currentBossId = null;
+  state.nextSpawnAt = Date.now() + CODEX_UNMAPPED_ROAD_RESPAWN_MS;
+
+  battle.active = false;
+  battle.winner = 'party';
+  battle.waitingForPlayer = false;
+  gameState.battleInputLocked = false;
+
   saveGame();
   renderBattle();
 }
-
 
 const CODEX_BOOK4_ROADMAP = [
   {id:1,title:'The Door System Built on Purpose',type:'story / system',boss:''},
@@ -6588,7 +6713,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.85 — CLEAN TEST CONTROLS — AISYAH HAGGLING TRADER TEST — AISYAH HAGGLING SHOP TEST — SENEDRA FINAL ABILITY TEST</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.86 — UNMAPPED ROAD REPEATABLE BOSS ZONE — CLEAN TEST CONTROLS — AISYAH HAGGLING TRADER TEST — AISYAH HAGGLING SHOP TEST — SENEDRA FINAL ABILITY TEST</div>
 
 <button id="senedra-ability-test-v170" type="button"
  onclick="startSenedraAbilitiesTestV172()"
