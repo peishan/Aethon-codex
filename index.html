@@ -5817,6 +5817,28 @@ function formatUnmappedRoadCountdown(ms) {
   return minutes + ':' + String(seconds).padStart(2, '0');
 }
 
+const CODEX_UNMAPPED_ROAD_REGULAR_POOL = [
+  {
+    id:'road_wisp', name:'Road Wisp', icon:'✨',
+    level:20, hp:420, ac:18, xp:420, gold:90,
+    damage:18, desc:'A wandering spark left behind by the repaired road.'
+  },
+  {
+    id:'fracture_hound', name:'Fracture Hound', icon:'🐺',
+    level:21, hp:560, ac:19, xp:560, gold:120,
+    damage:22, desc:'A creature that follows the seams between paths.'
+  },
+  {
+    id:'echo_guardian', name:'Echo Guardian', icon:'⚔️',
+    level:22, hp:760, ac:20, xp:760, gold:160,
+    damage:26, desc:'A stronger sentinel encountered deeper along the road.'
+  }
+];
+
+function getUnmappedRoadRegular(id) {
+  return CODEX_UNMAPPED_ROAD_REGULAR_POOL.find(e => e.id === id) || null;
+}
+
 function renderExplore() {
   const list = document.getElementById('grindEncounterList');
   if (!list) return;
@@ -5839,10 +5861,33 @@ function renderExplore() {
   const state = getUnmappedRoadState();
   const boss = ensureUnmappedRoadSpawn();
 
+  let html =
+    '<div class="grind-zone-card">' +
+      '<div class="grind-zone-title">🌌 The Unmapped Road</div>' +
+      '<div class="grind-zone-copy">High-level road creatures roam here between the delayed return of earlier bosses.</div>' +
+      '<div class="grind-zone-note">Regular encounters are level 20–22. Boss encounters are separate, delayed, and grant XP + gold only.</div>' +
+    '</div>';
+
+  html += '<div class="grind-zone-card">' +
+    '<div class="grind-zone-title">⚔️ Regular Encounters</div>';
+
+  CODEX_UNMAPPED_ROAD_REGULAR_POOL.forEach(e => {
+    html +=
+      '<div class="grind-encounter">' +
+        '<div>' +
+          '<div class="grind-name">' + e.icon + ' ' + e.name + ' <span style="opacity:.75">Lv ' + e.level + '</span></div>' +
+          '<div class="grind-meta">HP ' + e.hp + ' · AC ' + e.ac + ' · XP ' + e.xp + ' · ' + e.gold + 'G</div>' +
+          '<div class="grind-desc">' + e.desc + '</div>' +
+        '</div>' +
+        '<button class="grind-fight" onclick="startGrindingBattle(\'unmappedRoad\',\'' + e.id + '\')">Fight</button>' +
+      '</div>';
+  });
+  html += '</div>';
+
   if (boss) {
-    list.innerHTML =
+    html +=
       '<div class="grind-zone-card">' +
-        '<div class="grind-zone-title">⚔️ A Boss Has Appeared</div>' +
+        '<div class="grind-zone-title">👑 A Boss Has Appeared</div>' +
         '<div class="grind-zone-copy">The repaired road has drawn an earlier foe back into the world.</div>' +
         '<div class="grind-encounter">' +
           '<div>' +
@@ -5853,49 +5898,62 @@ function renderExplore() {
           '<button class="grind-fight" onclick="startGrindingBattle(\'unmappedRoad\',\'boss\')">Fight</button>' +
         '</div>' +
       '</div>';
-    return;
+  } else {
+    const remaining = Math.max(0, Number(state.nextSpawnAt || 0) - Date.now());
+    html +=
+      '<div class="grind-zone-card">' +
+        '<div class="grind-zone-title">🕰️ Earlier Bosses — Cooling Down</div>' +
+        '<div class="grind-zone-copy">The last boss has been defeated. Regular monsters remain available while another earlier boss is drawn back through the road.</div>' +
+        '<div class="grind-respawn">Next boss encounter in <strong id="unmappedRoadCountdown">' +
+          formatUnmappedRoadCountdown(remaining) +
+        '</strong></div>' +
+        '<div class="grind-zone-note">Boss respawn is deliberately delayed and randomly selected.</div>' +
+      '</div>';
   }
 
-  const remaining = Math.max(0, Number(state.nextSpawnAt || 0) - Date.now());
-  list.innerHTML =
-    '<div class="grind-zone-card">' +
-      '<div class="grind-zone-title">🌌 The Road Is Quiet</div>' +
-      '<div class="grind-zone-copy">The last boss has been defeated. Another earlier boss will eventually be drawn back through the road.</div>' +
-      '<div class="grind-respawn">Next boss encounter in <strong id="unmappedRoadCountdown">' +
-        formatUnmappedRoadCountdown(remaining) +
-      '</strong></div>' +
-      '<div class="grind-zone-note">Respawn is deliberately delayed. Each encounter is randomly selected.</div>' +
-    '</div>';
+  list.innerHTML = html;
 
-  window._unmappedRoadRespawnTimer = setInterval(() => {
-    const el = document.getElementById('unmappedRoadCountdown');
-    if (!el) {
-      clearInterval(window._unmappedRoadRespawnTimer);
-      window._unmappedRoadRespawnTimer = null;
-      return;
-    }
-    const left = Math.max(0, Number(state.nextSpawnAt || 0) - Date.now());
-    el.textContent = formatUnmappedRoadCountdown(left);
-    if (left <= 0) {
-      clearInterval(window._unmappedRoadRespawnTimer);
-      window._unmappedRoadRespawnTimer = null;
-      renderExplore();
-    }
-  }, 1000);
+  if (!boss) {
+    window._unmappedRoadRespawnTimer = setInterval(() => {
+      const el = document.getElementById('unmappedRoadCountdown');
+      if (!el) {
+        clearInterval(window._unmappedRoadRespawnTimer);
+        window._unmappedRoadRespawnTimer = null;
+        return;
+      }
+      const left = Math.max(0, Number(state.nextSpawnAt || 0) - Date.now());
+      el.textContent = formatUnmappedRoadCountdown(left);
+      if (left <= 0) {
+        clearInterval(window._unmappedRoadRespawnTimer);
+        window._unmappedRoadRespawnTimer = null;
+        renderExplore();
+      }
+    }, 1000);
+  }
 }
 
-function startGrindingBattle(zoneId, encounterId) {
+
+function startGrindingBattle(zoneId, encounterId) 
+{
   if (zoneId !== 'unmappedRoad') return false;
 
-  const zone = CODEX_UNMAPPED_ROAD_BOSS_POOL;
   const state = getUnmappedRoadState();
-  const boss = ensureUnmappedRoadSpawn();
+  const boss = encounterId === 'boss' ? ensureUnmappedRoadSpawn() : null;
+  const regular = encounterId !== 'boss' ? getUnmappedRoadRegular(encounterId) : null;
 
-  if (!boss || encounterId !== 'boss' || state.currentBossId !== boss.id) {
-    showNotification('No boss is currently available on The Unmapped Road.');
+  if (encounterId === 'boss') {
+    if (!boss || state.currentBossId !== boss.id) {
+      showNotification('No boss is currently available on The Unmapped Road.');
+      renderExplore();
+      return false;
+    }
+  } else if (!regular) {
+    showNotification('That road encounter is not available.');
     renderExplore();
     return false;
   }
+
+  const enemy = boss || regular;
 
   gameState.party.forEach(p => {
     if (p.active && p.joined) {
@@ -5912,15 +5970,18 @@ function startGrindingBattle(zoneId, encounterId) {
     chapterId: null,
     grind: true,
     grindZoneId: 'unmappedRoad',
-    grindEncounterId: boss.id,
+    grindEncounterId: boss ? boss.id : regular.id,
+    grindIsBoss: Boolean(boss),
     boss: {
-      name: boss.name,
-      icon: boss.icon,
-      hp: boss.hp,
-      maxHP: boss.hp,
-      ac: boss.ac,
+      name: enemy.name,
+      icon: enemy.icon,
+      hp: enemy.hp,
+      maxHP: enemy.hp,
+      ac: enemy.ac,
+      level: enemy.level || null,
+      damage: enemy.damage || 20,
       phaseIndex: 0,
-      phases: boss.phaseList
+      phases: boss ? boss.phaseList : []
     },
     turnIndex: -1,
     turnOrder: [],
@@ -5928,7 +5989,7 @@ function startGrindingBattle(zoneId, encounterId) {
     log: [],
     active: true,
     waitingForPlayer: false,
-    narrative: boss.name + ' returns along The Unmapped Road.',
+    narrative: enemy.name + ' is encountered along The Unmapped Road.',
     winner: null
   };
 
@@ -5943,29 +6004,33 @@ function startGrindingBattle(zoneId, encounterId) {
     return false;
   }
 
-  addCombatLog('=== ' + boss.name + ' appears on The Unmapped Road! ===', 'info');
+  addCombatLog('=== ' + enemy.name + ' appears on The Unmapped Road! ===', 'info');
   switchTab('battle');
   nextTurn();
   return true;
 }
 
-function finishGrindingBattle() {
+
+function finishGrindingBattle() 
+{
   const battle = gameState.battleState;
   if (!battle || !battle.grind) return;
 
-  const boss = getUnmappedRoadBoss(battle.grindEncounterId);
-  if (!boss) return;
+  const boss = battle.grindIsBoss ? getUnmappedRoadBoss(battle.grindEncounterId) : null;
+  const regular = !boss ? getUnmappedRoadRegular(battle.grindEncounterId) : null;
+  const enemy = boss || regular;
+  if (!enemy) return;
 
-  addXP(boss.xp);
-  gameState.gold = Number(gameState.gold || 0) + Number(boss.gold || 0);
+  addXP(enemy.xp);
+  gameState.gold = Number(gameState.gold || 0) + Number(enemy.gold || 0);
+  addCombatLog('Reward: +' + enemy.xp + ' XP · +' + enemy.gold + 'G', 'heal');
 
-  // IMPORTANT: Repeatable frontier bosses grant XP + gold only.
-  // No monster drops and no boss equipment are awarded here.
-  addCombatLog('Reward: +' + boss.xp + ' XP · +' + boss.gold + 'G', 'heal');
-
-  const state = getUnmappedRoadState();
-  state.currentBossId = null;
-  state.nextSpawnAt = Date.now() + CODEX_UNMAPPED_ROAD_RESPAWN_MS;
+  if (boss) {
+    const state = getUnmappedRoadState();
+    state.currentBossId = null;
+    state.nextSpawnAt = Date.now() + CODEX_UNMAPPED_ROAD_RESPAWN_MS;
+    addCombatLog('The road falls quiet. Another earlier boss will return later.', 'info');
+  }
 
   battle.active = false;
   battle.winner = 'party';
@@ -5973,8 +6038,9 @@ function finishGrindingBattle() {
   gameState.battleInputLocked = false;
 
   saveGame();
-  renderBattle();
+  renderExplore();
 }
+
 
 const CODEX_BOOK4_ROADMAP = [
   {id:1,title:'The Door System Built on Purpose',type:'story / system',boss:''},
@@ -6713,7 +6779,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.86 — UNMAPPED ROAD REPEATABLE BOSS ZONE — CLEAN TEST CONTROLS — AISYAH HAGGLING TRADER TEST — AISYAH HAGGLING SHOP TEST — SENEDRA FINAL ABILITY TEST</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.87 — UNMAPPED ROAD LEVEL 20+ MONSTERS — UNMAPPED ROAD REPEATABLE BOSS ZONE — CLEAN TEST CONTROLS — AISYAH HAGGLING TRADER TEST — AISYAH HAGGLING SHOP TEST — SENEDRA FINAL ABILITY TEST</div>
 
 <button id="senedra-ability-test-v170" type="button"
  onclick="startSenedraAbilitiesTestV172()"
