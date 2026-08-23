@@ -1635,23 +1635,22 @@ Add/update paths only in ART_ASSETS above.
 </div>
 
 <script>
-function bindUnmappedRoadFightButtons() {
-  const list = document.getElementById('grindEncounterList');
-  if (!list || list._roadFightBound) return;
-  list._roadFightBound = true;
-  list.addEventListener('click', function(ev) {
-    const btn = ev.target.closest('.grind-fight[data-road-encounter]');
-    if (!btn) return;
-    ev.preventDefault();
-    ev.stopPropagation();
-    const encounterId = btn.getAttribute('data-road-encounter');
+window.codexStartRoadEncounter = function(encounterId) {
+  try {
     if (typeof window.startGrindingBattle === 'function') {
-      window.startGrindingBattle('unmappedRoad', encounterId);
-    } else {
-      console.error('Unmapped Road battle starter unavailable');
+      return window.startGrindingBattle('unmappedRoad', encounterId);
     }
-  });
-}
+    if (typeof startGrindingBattleImpl === 'function') {
+      return startGrindingBattleImpl('unmappedRoad', encounterId);
+    }
+    if (typeof showNotification === 'function') showNotification('Could not start this encounter.');
+    return false;
+  } catch (err) {
+    console.error('Road encounter error:', err);
+    if (typeof showNotification === 'function') showNotification('Could not start this encounter.');
+    return false;
+  }
+};
 
 function getAisyahHagglingDiscountPercent() {
   return 10;
@@ -5897,7 +5896,7 @@ function renderExplore() {
           '<div class="grind-meta">HP ' + e.hp + ' · AC ' + e.ac + ' · XP ' + e.xp + ' · ' + e.gold + 'G</div>' +
           '<div class="grind-desc">' + e.desc + '</div>' +
         '</div>' +
-        '<button class="grind-fight" data-road-encounter="' + e.id + '">Fight</button>' +
+        '<button class="grind-fight" type="button" onclick="window.codexStartRoadEncounter(this.dataset.roadEncounter)" data-road-encounter="' + e.id + '">Fight</button>' +
       '</div>';
   });
   html += '</div>';
@@ -5913,7 +5912,7 @@ function renderExplore() {
             '<div class="grind-meta">HP ' + boss.hp + ' · AC ' + boss.ac + ' · XP ' + boss.xp + ' · ' + boss.gold + 'G</div>' +
             '<div class="grind-desc">Repeatable encounter. Victory grants XP and gold only — no boss equipment or drops.</div>' +
           '</div>' +
-          '<button class="grind-fight" data-road-encounter="boss">Fight</button>' +
+          '<button class="grind-fight" type="button" onclick="window.codexStartRoadEncounter(this.dataset.roadEncounter)" data-road-encounter="boss">Fight</button>' +
         '</div>' +
       '</div>';
   } else {
@@ -5930,7 +5929,6 @@ function renderExplore() {
   }
 
   list.innerHTML = html;
-  bindUnmappedRoadFightButtons();
 
   if (!boss) {
     window._unmappedRoadRespawnTimer = setInterval(() => {
@@ -6793,7 +6791,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.90 — UNMAPPED ROAD FIGHT BUTTONS ROBUST — UNMAPPED ROAD ENCOUNTER FIX — UNMAPPED ROAD FIGHT BUTTON FIX — UNMAPPED ROAD LEVEL 20+ MONSTERS — UNMAPPED ROAD REPEATABLE BOSS ZONE — CLEAN TEST CONTROLS — AISYAH HAGGLING TRADER TEST — AISYAH HAGGLING SHOP TEST — SENEDRA FINAL ABILITY TEST</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.91 — UNMAPPED ROAD FIGHT FIX — UNMAPPED ROAD FIGHT BUTTONS ROBUST — UNMAPPED ROAD ENCOUNTER FIX — UNMAPPED ROAD FIGHT BUTTON FIX — UNMAPPED ROAD LEVEL 20+ MONSTERS — UNMAPPED ROAD REPEATABLE BOSS ZONE — CLEAN TEST CONTROLS — AISYAH HAGGLING TRADER TEST — AISYAH HAGGLING SHOP TEST — SENEDRA FINAL ABILITY TEST</div>
 
 <button id="senedra-ability-test-v170" type="button"
  onclick="startSenedraAbilitiesTestV172()"
