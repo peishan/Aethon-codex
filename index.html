@@ -5933,101 +5933,78 @@ function renderExplore() {
 }
 
 
-function startGrindingBattleImpl(zoneId, encounterId) 
-{
+
+function startGrindingBattleImpl(zoneId, encounterId) {
   if (zoneId !== 'unmappedRoad') return false;
 
-  const state = getUnmappedRoadState();
-  const boss = encounterId === 'boss' ? ensureUnmappedRoadSpawn() : null;
-  const regular = encounterId !== 'boss' ? getUnmappedRoadRegular(encounterId) : null;
+  const regular = typeof getUnmappedRoadRegular === 'function'
+    ? getUnmappedRoadRegular(encounterId)
+    : null;
+  const boss = encounterId === 'boss' && typeof ensureUnmappedRoadSpawn === 'function'
+    ? ensureUnmappedRoadSpawn()
+    : null;
+  const enemy = boss || regular;
 
-  if (encounterId === 'boss') {
-    if (!boss || state.currentBossId !== boss.id) {
-      showNotification('No boss is currently available on The Unmapped Road.');
-      renderExplore();
-      return false;
-    }
-  } else if (!regular) {
-    showNotification('That road encounter is not available.');
-    renderExplore();
+  if (!enemy) {
+    if (typeof showNotification === 'function') showNotification('Encounter not startable.');
     return false;
   }
 
-  const enemy = boss || regular;
+  const party = (typeof getActiveParty === 'function')
+    ? getActiveParty().filter(p => Number(p.currentHP ?? p.stats?.hp ?? 1) > 0)
+    : [];
 
-  gameState.party.forEach(p => {
-    if (p.active && p.joined) {
-      p.currentHP = p.stats.hp;
-      p.currentMP = p.stats.mp;
-      p.buffs = [];
-      p.debuffs = [];
-    }
-  });
+  if (!party.length) {
+    if (typeof showNotification === 'function') showNotification('No active party members available.');
+    return false;
+  }
 
-  const activeParty = getActiveParty().filter(p => p.currentHP > 0);
-  gameState.battleInputLocked = false;
+  // Normalize the enemy to the structure expected by the existing battle UI.
+  const maxHp = Number(enemy.hp || enemy.maxHP || 1);
   gameState.battleState = {
-    chapterId: null,
+    active: true,
     grind: true,
     grindZoneId: 'unmappedRoad',
     grindEncounterId: boss ? boss.id : regular.id,
     grindIsBoss: Boolean(boss),
+    chapterId: null,
     boss: {
+      id: enemy.id,
       name: enemy.name,
-      icon: enemy.icon,
-      hp: enemy.hp,
-      maxHP: enemy.hp,
-      ac: enemy.ac,
-      level: enemy.level || null,
-      damage: enemy.damage || 20,
-      phaseIndex: 0,
-      phases: boss ? boss.phaseList : []
+      icon: enemy.icon || '👹',
+      hp: maxHp,
+      currentHP: maxHp,
+      maxHP: maxHp,
+      ac: Number(enemy.ac || 10),
+      level: Number(enemy.level || 20),
+      damage: Number(enemy.damage || 20),
+      phaseList: enemy.phaseList || [],
+      phases: enemy.phaseList || []
     },
-    turnIndex: -1,
-    turnOrder: [],
     round: 1,
+    turnIndex: -1,
+    turnOrder: party.map(p => ({
+      id:p.id,
+      initiative:(typeof rollDie === 'function' ? rollDie(20) : 10) +
+        (typeof getModifier === 'function' ? getModifier(Number(p.stats?.spd) || 10) : 0)
+    })).sort((a,b) => b.initiative-a.initiative),
     log: [],
-    active: true,
+    narrative: enemy.name + ' appears on The Unmapped Road.',
     waitingForPlayer: false,
-    narrative: enemy.name + ' is encountered along The Unmapped Road.',
     winner: null
   };
 
-  gameState.battleState.turnOrder = activeParty.map(p => ({
-    id: p.id,
-    initiative: rollDie(20) + getModifier(Number(p.stats.spd) || 10)
-  })).sort((a,b) => b.initiative - a.initiative);
+  if (typeof addCombatLog === 'function')
+    addCombatLog('=== ' + enemy.name + ' appears on The Unmapped Road! ===', 'info');
 
-  if (!gameState.battleState.turnOrder.length) {
-    gameState.battleState = null;
-    showNotification('No active party members are available.');
-    return false;
-  }
+  gameState.battleInputLocked = false;
 
-  addCombatLog('=== ' + enemy.name + ' appears on The Unmapped Road! ===', 'info');
-  switchTab('battle');
-  nextTurn();
+  if (typeof switchTab === 'function') switchTab('battle');
+  if (typeof renderBattle === 'function') renderBattle();
+  if (typeof nextTurn === 'function') nextTurn();
+
   return true;
 }
-window.startGrindingBattle = function(zoneId, encounterId) {
-  try {
-    if (typeof window._startGrindingBattleImpl === 'function') {
-      return window._startGrindingBattleImpl(zoneId, encounterId);
-    }
-    if (typeof startGrindingBattleImpl === 'function') {
-      return startGrindingBattleImpl(zoneId, encounterId);
-    }
-  } catch (e) {
-    console.error('startGrindingBattle failed:', e);
-    if (typeof showNotification === 'function') showNotification('Could not start this encounter.');
-    return false;
-  }
-  console.error('startGrindingBattle is unavailable');
-  if (typeof showNotification === 'function') showNotification('Could not start this encounter.');
-  return false;
-};
-
-
 
 function finishGrindingBattle() 
 {
@@ -6797,7 +6774,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.88 — UNMAPPED ROAD FIGHT BUTTON FIX — UNMAPPED ROAD LEVEL 20+ MONSTERS — UNMAPPED ROAD REPEATABLE BOSS ZONE — CLEAN TEST CONTROLS — AISYAH HAGGLING TRADER TEST — AISYAH HAGGLING SHOP TEST — SENEDRA FINAL ABILITY TEST</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.89 — UNMAPPED ROAD ENCOUNTER FIX — UNMAPPED ROAD FIGHT BUTTON FIX — UNMAPPED ROAD LEVEL 20+ MONSTERS — UNMAPPED ROAD REPEATABLE BOSS ZONE — CLEAN TEST CONTROLS — AISYAH HAGGLING TRADER TEST — AISYAH HAGGLING SHOP TEST — SENEDRA FINAL ABILITY TEST</div>
 
 <button id="senedra-ability-test-v170" type="button"
  onclick="startSenedraAbilitiesTestV172()"
