@@ -526,11 +526,30 @@ const ART_ASSETS = {
     aldric: 'assets/party/aldric.webp'
   },
   bosses: {
-    10: 'assets/boss/ch10-abyssal-leviathan.webp',
-    12: 'assets/boss/ch12-nexus-planarch.webp',
-    31: 'assets/boss/ch31-astral-devourer.webp',
-    62: 'assets/boss/ch62-veilshaper.webp',
-    86: 'assets/boss/ch86-robin-c.webp'
+    // Boss art files were uploaded under an older, now-abandoned chapter
+    // numbering scheme (e.g. "ch10-abyssal-leviathan.webp"), which no longer
+    // matches the current chapterId values below. Re-mapped by boss NAME
+    // (the one stable identifier) to the chapterId each boss actually uses
+    // today. Files with no name-match to a current boss (ch14-ch20, ch22-
+    // ch30, ch32, ch36-38, ch86 etc.) are leftover art from that earlier
+    // draft and aren't wired to anything real yet.
+    31: 'assets/boss/ch31-astral-devourer.webp',   // Astral Devourer
+    33: 'assets/boss/ch62-veilshaper.webp',        // The Veilshaper
+    34: 'assets/boss/ch13-frost-queen.webp',       // Eternal Frost Queen
+    35: 'assets/boss/ch10-abyssal-leviathan.webp', // Abyssal Leviathan
+    38: 'assets/boss/ch12-nexus-planarch.webp',    // Nexus Planarch
+    39: 'assets/boss/ch39-temporal-fracture.webp', // Temporal Fracture
+    40: 'assets/boss/ch40-the-last-guard.webp',    // The Last Guard
+    41: 'assets/boss/ch41-scavenger-king.webp',    // Scavenger King
+    42: 'assets/boss/ch42-debt-wraith.webp',       // Debt Wraith
+    50: 'assets/boss/ch21-echo-of-aisyah.webp'     // Echo of Aisyah
+    // Still missing art (using icon fallback): Infernal Tyrant(32),
+    // Elder Dragon of Regret(36), Astral Lord(37), The Foreman(43),
+    // Widow's Watch(44), Vanished Guide(45), The Room(46), Rustbound(47),
+    // Unbroken Storm(48), Fading Familiar(49), The Tired Version(51),
+    // The Splinter Court(54), The Unmended(56), The Relapse(57),
+    // The Wayfinder(66), The Tidereaver(67), The Ledgerbound(68),
+    // The Undertow(69), The Horizon Keeper(70).
   }
 };
 
