@@ -72,6 +72,59 @@ function getTraderPriceWithHaggling(basePrice) {
   return Math.max(1, Math.floor(base * (1 - pct / 100)));
 }
 
+// Offline/idle regeneration — HP and MP were previously frozen in time
+// whenever the app was closed; this restores a portion of both based on
+// how long it's been since the save was written, framed as the party
+// resting. A full 8 hours away (a night's rest) fully restores everyone,
+// including reviving anyone who'd fallen. Scales linearly below that, and
+// does nothing for a quick reopen (under 30 minutes) so it doesn't feel
+// like it's constantly firing during normal play.
+function codexApplyOfflineRegen(savedAtISOString) {
+  const savedAt = Date.parse(savedAtISOString);
+  if (!Number.isFinite(savedAt)) return;
+
+  const hoursAway = (Date.now() - savedAt) / (1000 * 60 * 60);
+  if (hoursAway < 0.5) return;
+
+  const FULL_REST_HOURS = 8;
+  const percent = Math.min(1, hoursAway / FULL_REST_HOURS);
+
+  let anyChange = false;
+  let anyRevived = false;
+
+  (gameState.party || []).forEach(p => {
+    if (!p.joined) return;
+    const maxHP = Number(p.stats?.maxHP || p.stats?.hp || 1);
+    const maxMP = Number(p.stats?.maxMP || p.stats?.mp || 0);
+    const beforeHP = Number(p.currentHP || 0);
+    const beforeMP = Number(p.currentMP || 0);
+    const wasFallen = beforeHP <= 0;
+
+    p.currentHP = Math.min(maxHP, beforeHP + Math.round(maxHP * percent));
+    p.currentMP = Math.min(maxMP, beforeMP + Math.round(maxMP * percent));
+
+    if (p.currentHP !== beforeHP || p.currentMP !== beforeMP) anyChange = true;
+    if (wasFallen && p.currentHP > 0) anyRevived = true;
+  });
+
+  if (anyChange && typeof showNotification === 'function') {
+    const wholeHours = Math.round(hoursAway);
+    const timeLabel = wholeHours >= 1
+      ? wholeHours + ' hour' + (wholeHours === 1 ? '' : 's')
+      : 'a while';
+    let msg = 'While you were away (' + timeLabel + '), the party rested';
+    msg += percent >= 1 ? ' and is fully restored.' : '.';
+    if (anyRevived) msg += ' Fallen allies are back on their feet.';
+    showNotification(msg);
+  }
+
+  // Persist immediately — otherwise this only lives in memory until the
+  // next unrelated action happens to trigger a save, and a reload before
+  // that point would silently recompute the same regen from the old
+  // savedAt timestamp instead of building on top of it.
+  if (anyChange && typeof saveGame === 'function') saveGame();
+}
+
 /* ENTER_CODEX_SAVE_FIX_V150 */
 function enterCodexV150() {
   try {
@@ -107,6 +160,8 @@ function enterCodexV150() {
       console.error('Save application failed:', e);
       return false;
     }
+
+    codexApplyOfflineRegen(data.savedAt);
 
     beginGame();
     if (typeof showNotification === 'function') showNotification('Saved journey loaded');
@@ -2581,6 +2636,13 @@ function isFixedPartyMember(member) {
    ============================================================ */
 const MAX_ACTIVE_PARTY_SIZE = 7;
 
+// San, Joel, and Aisyah are permanently fixed in the active roster (along
+// with Soel, who is exempt from benching entirely as a familiar rather
+// than a party slot). That leaves Mezstorm, Eliz, Senedra, and Zaki as the
+// swappable pool competing with quest allies (Aldric, Wren, future
+// recruits) for the remaining active slots.
+const UNBENCHABLE_CORE_IDS = new Set(['san', 'joel', 'aisyah']);
+
 function codexActiveRosterCount() {
   return (gameState.party || []).filter(p =>
     p.active && p.joined && !FAMILIAR_IDS.has(p.id)
@@ -2590,7 +2652,7 @@ function codexActiveRosterCount() {
 function codexCanBenchMember(characterId) {
   const member = (gameState.party || []).find(p => p.id === characterId);
   if (!member || !member.joined || !member.active) return false;
-  if (characterId === 'san') return false; // protagonist, always in the field
+  if (UNBENCHABLE_CORE_IDS.has(characterId)) return false;
   if (FAMILIAR_IDS.has(characterId)) return false; // Soel is exempt
   return true;
 }
@@ -3362,12 +3424,18 @@ function companionAIAction(member, battle) {
   // or keep themselves standing. Any companion's turn can spend a shared
   // potion when there's a real emergency; ordinary healing/skills still
   // take priority the rest of the time.
+  //
+  // IMPORTANT: unlike the magic Resurrection spell (which Eliz genuinely
+  // cannot cast on herself), a potion has no such restriction — if Eliz
+  // herself is the one who falls, she still needs to be revivable, or the
+  // party permanently loses its healer with no fallback. Only Soel is
+  // excluded here (his "reforming" is its own separate story mechanic).
   const roster = gameState.party.filter(p => p.active);
   const eliz = roster.find(p => p.id === 'eliz');
   const elizCanResurrect = !!eliz && eliz.currentHP > 0 &&
     Number(eliz.currentMP || 0) >= 30 && !battle._elizResurrectionUsed;
   const fallenAlly = roster.find(p =>
-    p.currentHP <= 0 && p.id !== 'eliz' && p.id !== 'soel'
+    p.currentHP <= 0 && p.id !== 'soel'
   );
   if (fallenAlly && !elizCanResurrect) {
     const potions = getPotions();
