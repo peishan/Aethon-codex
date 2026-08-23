@@ -4595,6 +4595,20 @@ window.startGrindingBattle = window.startGrindingBattle = function startGrinding
 
   // Normalize the enemy to the structure expected by the existing battle UI.
   const maxHp = Number(enemy.hp || enemy.maxHP || 1);
+  // Regular Unmapped Road encounters (CODEX_UNMAPPED_ROAD_REGULAR_POOL) don't
+  // define a phaseList like the returning bosses do. Without a fallback here,
+  // boss.phases ends up [] and both renderBattle() (phase.name) and
+  // updateBossPhase() (phase.ac) crash on the very first render/turn.
+  const enemyPhases = (Array.isArray(enemy.phaseList) && enemy.phaseList.length)
+    ? enemy.phaseList
+    : [{
+        name: 'Standard',
+        threshold: 0,
+        ac: Number(enemy.ac || 10),
+        attack: enemy.name + ' Strike',
+        damage: Number(enemy.damage || 20),
+        desc: enemy.desc || (enemy.name + ' attacks.')
+      }];
   gameState.battleState = {
     active: true,
     grind: true,
@@ -4612,8 +4626,9 @@ window.startGrindingBattle = window.startGrindingBattle = function startGrinding
       ac: Number(enemy.ac || 10),
       level: Number(enemy.level || 20),
       damage: Number(enemy.damage || 20),
-      phaseList: enemy.phaseList || [],
-      phases: enemy.phaseList || []
+      phaseList: enemyPhases,
+      phases: enemyPhases,
+      phaseIndex: 0
     },
     round: 1,
     turnIndex: -1,
