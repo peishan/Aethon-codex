@@ -5685,9 +5685,14 @@ function renderCodexTraderPanel(){
     else{
       s+='<div class="trader-greeting">'+trader.greeting+'</div><div class="trader-stock">';
       trader.stock.forEach((item,ii)=>{
-        const price=item.price||0, can=Number(gameState.gold||0)>=price;
+        const basePrice=Number(item.price||0);
+        const price=getTraderPriceWithHaggling(basePrice);
+        const can=Number(gameState.gold||0)>=price;
+        const priceLabel=price<basePrice
+          ? '<span style="text-decoration:line-through;opacity:.55">'+basePrice+'G</span> '+price+'G'
+          : price+'G';
         s+='<div class="trader-item"><div><div class="trader-item-name">✦ '+item.n+'</div><div class="trader-item-meta">'+item.d+'</div></div>';
-        s+='<button class="trader-buy" '+(can?'':'disabled')+' onclick="buyFromCodexTrader(\''+trader.n+'\','+ii+')">'+price+'G</button></div>';
+        s+='<button class="trader-buy" '+(can?'':'disabled')+' onclick="buyFromCodexTrader(\''+trader.n+'\','+ii+')">'+priceLabel+'</button></div>';
       });
       s+='</div>';
     }
@@ -5703,7 +5708,8 @@ function openCodexTrader(){
 function buyFromCodexTrader(traderName,itemIndex){
   const trader=CODEX_TRADER_BY_NAME[traderName], item=trader&&trader.stock[itemIndex];
   if(!item)return;
-  const price=Number(item.price||0);
+  const basePrice=Number(item.price||0);
+  const price=getTraderPriceWithHaggling(basePrice);
   if(Number(gameState.gold||0)<price){showNotification('Not enough gold.');return;}
   const copy={
     ...item,
@@ -6619,7 +6625,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.83 — AISYAH HAGGLING FIX — AISYAH HAGGLING TRADER TEST — AISYAH HAGGLING SHOP TEST — SENEDRA FINAL ABILITY TEST</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.84 — AISYAH HAGGLING REAL TRADER — AISYAH HAGGLING TRADER TEST — AISYAH HAGGLING SHOP TEST — SENEDRA FINAL ABILITY TEST</div>
 
 <button id="senedra-ability-test-v170" type="button"
  onclick="startSenedraAbilitiesTestV172()"
@@ -6640,7 +6646,7 @@ document.addEventListener('keydown', (e) => {
 </button>
 
 <button id="aisyah-haggling-trader-test-v182" type="button"
- onclick="(function(){const base=100; const actual=base; alert('TRADER HAGGLING TEST\n\nBase price: '+base+' gold\nAisyah active: '+(isAisyahActiveForHaggling()?'YES':'NO')+'\nHaggling discount: '+(isAisyahActiveForHaggling()?getAisyahHagglingDiscountPercent():0)+'%\nActual trader price: '+actual+' gold');})()"
+ onclick="(function(){const base=100; const actual=getTraderPriceWithHaggling(base); alert('TRADER HAGGLING TEST\n\nBase price: '+base+' gold\nAisyah active: '+(isAisyahActiveForHaggling()?'YES':'NO')+'\nHaggling discount: '+(isAisyahActiveForHaggling()?getAisyahHagglingDiscountPercent():0)+'%\nActual trader price: '+actual+' gold');})()"
  style="margin:6px;padding:8px 12px;border:1px solid rgba(180,180,255,.7);border-radius:8px;background:rgba(35,25,75,.9);color:inherit;">
 🪙 Verify Trader Haggling
 </button>
