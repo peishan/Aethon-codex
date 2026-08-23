@@ -1646,45 +1646,8 @@ function getTraderPriceWithHaggling(basePrice) {
   return Math.max(1, Math.floor(base * (1 - pct / 100)));
 }
 
-function openAisyahHagglingTestV181() {
-  window._aisyahHagglingTestV181 = true;
-  const active = (typeof getActiveParty === 'function') ? getActiveParty() : [];
-  const hasAisyah = active.some(p => /aisyah/i.test(String(p.id || p.name || '')));
-  const basePrice = 100;
-  const pct = hasAisyah ? 10 : 0;
-  const finalPrice = Math.max(1, Math.floor(basePrice * (1 - pct / 100)));
-  alert(
-    'HAGGLING TEST\\n\\n' +
-    'Trader item: 100 gold\\n' +
-    'Aisyah active: ' + (hasAisyah ? 'YES' : 'NO') + '\\n' +
-    'Haggling discount: ' + pct + '%\\n' +
-    'Test price: ' + finalPrice + ' gold'
-  );
-}
-
-function startAisyahCoupDeGraceTestV180() {
-  window._aisyahCoupDeGraceTestV180 = true;
-  startGrindingBattle('unmappedRoad','road_wisp');
-  setTimeout(() => {
-    const b = gameState.battleState;
-    const boss = b && b.boss;
-    if (boss) {
-      const max = Number(boss.maxHP || boss.hp || 5000);
-      boss.maxHP = max;
-      boss.hp = Math.max(1, Math.floor(max * 0.20));
-      boss.currentHP = boss.hp;
-      addCombatLog('⚔️ Test target weakened to 20% HP for Coup de Grace.', 'info');
-    }
-  }, 100);
-}
-
 function startAisyahCoupDeGraceTestV178() {
   window._aisyahCoupDeGraceTestV179 = true;
-  startGrindingBattle('unmappedRoad','road_wisp');
-}
-
-function startAisyahSneakAttackTestV177() {
-  window._aisyahSneakAttackTestV177 = true;
   startGrindingBattle('unmappedRoad','road_wisp');
 }
 
@@ -4625,7 +4588,7 @@ function companionAIAction(member, battle) {
   }  
   // Aisyah — Coup de Grace test: target is deliberately weakened by the test
   // launcher, then the actual companion AI selects the existing skill executor.
-  if (member.id === 'aisyah' && window._aisyahCoupDeGraceTestV180) {
+  if (member.id === 'aisyah' && window.__removed_test_flag) {
     const hp = Number(battle.boss?.currentHP ?? battle.boss?.hp ?? 0);
     const maxHp = Number(battle.boss?.maxHP ?? battle.boss?.hp ?? 1);
     if (hp > 0 && hp <= maxHp * 0.25 && !battle._aisyahCoupDeGraceUsed) {
@@ -6625,7 +6588,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.84 — AISYAH HAGGLING REAL TRADER — AISYAH HAGGLING TRADER TEST — AISYAH HAGGLING SHOP TEST — SENEDRA FINAL ABILITY TEST</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.85 — CLEAN TEST CONTROLS — AISYAH HAGGLING TRADER TEST — AISYAH HAGGLING SHOP TEST — SENEDRA FINAL ABILITY TEST</div>
 
 <button id="senedra-ability-test-v170" type="button"
  onclick="startSenedraAbilitiesTestV172()"
@@ -6633,22 +6596,5 @@ document.addEventListener('keydown', (e) => {
 ✨ Test Senedra — Final Ability
 </button>
 
-<button id="aisyah-coup-de-grace-test-v180" type="button"
- onclick="startAisyahCoupDeGraceTestV180()"
- style="margin:6px;padding:8px 12px;border:1px solid rgba(180,180,255,.7);border-radius:8px;background:rgba(35,25,75,.9);color:inherit;">
-🗡️ Test Aisyah — Coup de Grace
-</button>
-
-<button id="aisyah-haggling-test-v181" type="button"
- onclick="openAisyahHagglingTestV181()"
- style="margin:6px;padding:8px 12px;border:1px solid rgba(180,180,255,.7);border-radius:8px;background:rgba(35,25,75,.9);color:inherit;">
-🪙 Test Aisyah — Haggling
-</button>
-
-<button id="aisyah-haggling-trader-test-v182" type="button"
- onclick="(function(){const base=100; const actual=getTraderPriceWithHaggling(base); alert('TRADER HAGGLING TEST\n\nBase price: '+base+' gold\nAisyah active: '+(isAisyahActiveForHaggling()?'YES':'NO')+'\nHaggling discount: '+(isAisyahActiveForHaggling()?getAisyahHagglingDiscountPercent():0)+'%\nActual trader price: '+actual+' gold');})()"
- style="margin:6px;padding:8px 12px;border:1px solid rgba(180,180,255,.7);border-radius:8px;background:rgba(35,25,75,.9);color:inherit;">
-🪙 Verify Trader Haggling
-</button>
 </body>
 </html>
