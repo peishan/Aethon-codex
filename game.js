@@ -1,3 +1,12 @@
+// Book V's opening chapter is deliberately gated by LEVEL, not just by
+// finishing Book 4 — the Unmapped Road exists specifically to be the gap
+// between books, and this ties Book V's start to actually having spent
+// time there. Recommended/required level: 30 (pure story XP through
+// chapter 70 lands around level 26, so this expects a modest amount of
+// Unmapped Road grinding, not a marathon). Declared at the very top of the
+// file since CODEX_TRADERS references it at module-load time.
+const BOOK5_UNLOCK_LEVEL = 30;
+
 // Shortens/replaces the long build-changelog banner in the page footer,
 // regardless of what text is baked into the currently deployed index.html.
 (function shortenCodexBuildBanner() {
@@ -29,8 +38,7 @@
   }
 })();
 
-window.codexStartRoadEncounter = function(encounterId) {
-  try {
+window.codexStartRoadEncounter = function(encounterId) {  try {
     if (typeof window.startGrindingBattle === 'function') {
       return window.startGrindingBattle('unmappedRoad', encounterId);
     }
@@ -1915,6 +1923,153 @@ const GAME_DATA = {
           {name:"Final Phase",threshold:0,ac:18,attack:"Final Measure",damage:34,desc:"The final phase of the encounter."}
         ]
       }
+    },
+// ===== BOOK 5: THE OPEN DOORS =====
+// Chapter order below is corrected from the original page art (which
+// mislabeled two pairs of chapters "3" and "6"). Confirmed ordering
+// constraint: Sister Wren's chapter comes before The Charge. The printed
+// numbers on the actual page images still need updating separately —
+// this is the authoritative in-game order.
+    {
+      id:71, book:5, title:"The Hollow Prophet",
+      quote:"The Cult of the Closed Eye ends not with a monster, but with a grieving man who found it useful to lie.",
+      image:"book5/b5ch1_compress.png",
+      narrative:"The party confronts the Hollow Prophet, founder of the Cult of the Closed Eye. He fights like someone who has already lost everything worth losing, making the ending cost as much as possible. He admits it, once it's over: he never believed the doctrine himself. Grief needed somewhere to go, and he gave it a doctrine instead of a grave.",
+      codexNote:"Book 5 opening chapter. Classification: combat / arc opening. Boss encounter: The Hollow Prophet.",
+      systemHints:["Read the chapter artwork and journal entry.", "Book 5 chapters unlock sequentially.", "Recommended level: 30."],
+      quest:{
+        title:"The Hollow Prophet",
+        desc:"Confront the Hollow Prophet and learn the truth behind the Cult of the Closed Eye.",
+        rewards:[{type:"xp",value:2400,label:"+2400 XP"}],
+        outcome:"The Cult of the Closed Eye ends there — not with a monster defeated, but with a grieving man finally out of reasons to keep lying to the people who trusted him with their pain.",
+        hasBattle:true
+      },
+      battle:{
+        bossName:"The Hollow Prophet", bossIcon:"🕯️",
+        bossHP:900, bossMaxHP:900, bossAC:17,
+        phases:[
+          {name:"The Doctrine",threshold:600,ac:17,attack:"Borrowed Conviction",damage:30,desc:"He fights like a man defending a lie he no longer needs."},
+          {name:"The Weight",threshold:300,ac:19,attack:"What Grief Became",damage:36,desc:"The doctrine cracks; what's underneath hits harder."},
+          {name:"The Admission",threshold:0,ac:20,attack:"No Triumph Left",damage:42,desc:"Exhausted, honest, and still dangerous."}
+        ]
+      }
+    },
+    {
+      id:72, book:5, title:"A Choice Not Made For Him",
+      quote:"Some choices you make for yourself become the road for everyone else.",
+      image:"book5/b5ch2_compress.png",
+      narrative:"Ser Aldric finds the party at the temple — not summoned, not assigned, just there. The Hollow Prophet is dead, but he was never the whole of it; others who believed something real are still out there. Aldric asks to help finish it properly, as the one doing the finding this time instead of the one who has to be found. San agrees. He joins the party.",
+      codexNote:"Book 5 recruitment chapter. Classification: story / new ally. Ser Aldric joins the party.",
+      systemHints:["Read the chapter artwork and journal entry.", "Book 5 chapters unlock sequentially.", ""],
+      quest:{
+        title:"A Choice Not Made For Him",
+        desc:"Read and complete Book 5, Chapter 2: A Choice Not Made For Him.",
+        rewards:[{type:"xp",value:1600,label:"+1600 XP"}],
+        outcome:"Ser Aldric commits to the party. The Cult of the Closed Eye is scattered but not gone — the arc \"The Last Embers\" begins.",
+        hasBattle:false,
+        recruits:"aldric"
+      }
+    },
+    {
+      id:73, book:5, title:"The Last Believer",
+      quote:"Some fights are against the world. Some fights are against lies. But the hardest fights are against the last part of yourself that still wants to believe you were right.",
+      image:"book5/b5ch3_compress.png",
+      narrative:"The Cult of the Closed Eye finally, actually ends — not with a monster, but with someone choosing to stop. Sister Wren doesn't fight like she's defending a doctrine; she fights like she's defending the last thing she has left to have been right about. She knew about the Prophet all along, and kept going anyway, because stopping would have meant admitting what she'd already given up was never worth giving up. Afterward, there is no grand ending to announce — just the truth, finally said out loud by the last person still carrying it.",
+      codexNote:"Book 5 chapter. Classification: combat / arc conclusion. Boss encounter: Sister Wren, the Last Believer.",
+      systemHints:["Read the chapter artwork and journal entry.", "Book 5 chapters unlock sequentially.", ""],
+      quest:{
+        title:"The Last Believer",
+        desc:"Confront Sister Wren, the last true believer of the Cult of the Closed Eye.",
+        rewards:[{type:"xp",value:2600,label:"+2600 XP"}],
+        outcome:"The Cult of the Closed Eye is over — not because the party won, but because there is finally no one left who needs it to keep going.",
+        hasBattle:true,
+        recruits:"wren"
+      },
+      battle:{
+        bossName:"Sister Wren, the Last Believer", bossIcon:"🕯️",
+        bossHP:1000, bossMaxHP:1000, bossAC:18,
+        phases:[
+          {name:"Doctrine",threshold:660,ac:18,attack:"Closed Eye Ward",damage:33,desc:"She fights the way someone defends a belief they aren't sure of anymore."},
+          {name:"Doubt",threshold:330,ac:20,attack:"I Am Still Not Sure I Am",damage:38,desc:"Her certainty cracks, and the fight gets more desperate."},
+          {name:"Honesty",threshold:0,ac:21,attack:"The Hard Thing",damage:44,desc:"The last stand of someone finally telling the truth."}
+        ]
+      }
+    },
+    {
+      id:74, book:5, title:"The Warmth That Chose to Stay",
+      quote:"Not blood. Not oath. Choice. That is what keeps a family whole.",
+      image:"book5/b5ch4_compress.png",
+      narrative:"A quiet chapter after the Wren fight. Eliz and San talk about Soel — not just the piece of him that reforms as Spirit Flame every time he's struck down, but the warmth that decided, once, that this family was worth staying for. Pieces of memory fade, but some choices don't have an expiration date.",
+      codexNote:"Book 5 chapter. Classification: story / bond. No combat.",
+      systemHints:["Read the chapter artwork and journal entry.", "Book 5 chapters unlock sequentially.", "No combat."],
+      quest:{
+        title:"The Warmth That Chose to Stay",
+        desc:"Read and complete Book 5, Chapter 4: The Warmth That Chose to Stay.",
+        rewards:[{type:"xp",value:900,label:"+900 XP"}],
+        outcome:"Not blood. Not oath. Choice. That is what keeps a family whole.",
+        hasBattle:false
+      }
+    },
+    {
+      id:75, book:5, title:"The One Who Waited",
+      quote:"The oldest familiar waited to learn whether choosing could ever be enough. Soel answered by staying.",
+      image:"book5/b5ch5_compress.png",
+      narrative:"The truth behind the echo in the Frostspire Ruins. Soel is not the first of his kind — an older familiar chose someone too, once, and lost them not to indifference but to the Breaking itself, before the bond could hold on to anything at all. Soel's choice, San realizes, is not just a power. It's him refusing to become that echo.",
+      codexNote:"Book 5 chapter. Classification: story / lore. Ancient Familiar Frostspire Echo — bond status: severed. Soel — Spirit Flame: active.",
+      systemHints:["Read the chapter artwork and journal entry.", "Book 5 chapters unlock sequentially.", "No combat."],
+      quest:{
+        title:"The One Who Waited",
+        desc:"Read and complete Book 5, Chapter 5: The One Who Waited.",
+        rewards:[{type:"xp",value:1000,label:"+1000 XP"}],
+        outcome:"The oldest familiar waited to learn whether choosing could ever be enough. Soel answered by staying.",
+        hasBattle:false
+      }
+    },
+    {
+      id:76, book:5, title:"The Static Fields",
+      quote:"Some things should not survive the Breaking. But memory has a way of refusing to stay buried with the past.",
+      image:"book5/b5ch6_compress.png",
+      narrative:"The Static Fields don't look like a place anything survives — cracked earth, a low electrical hum, wreckage from somewhere else washed up like driftwood. San finds a cracked, half-buried phone. It's hers. She dropped it once at Rasau and never got around to fixing it. It needs power before it needs anything else.",
+      codexNote:"Book 5 chapter. Classification: story / discovery. Introduces the phone questline.",
+      systemHints:["Read the chapter artwork and journal entry.", "Book 5 chapters unlock sequentially.", "No combat."],
+      quest:{
+        title:"The Static Fields",
+        desc:"Read and complete Book 5, Chapter 6: The Static Fields.",
+        rewards:[{type:"xp",value:1100,label:"+1100 XP"}],
+        outcome:"For the first time since any of you arrived here, the old world does not feel entirely gone. Just quiet. Waiting to see if anyone still knows how to call it back.",
+        hasBattle:false
+      }
+    },
+    {
+      id:77, book:5, title:"The Charge",
+      quote:"Some doors do not open to bring us home, but to remind us who we were before we were lost.",
+      image:"book5/b5ch7_compress.png",
+      narrative:"Three days of trying not to think about it, and three days of failing. Mezstorm gives the phone just enough power to wake, not enough to be stable. It's enough. The screen lights up on a photo of San and her mother, and a fingerprint unlocks a message years old but still here: 'You are stronger than you think. Come home safely. I love you always.' The Codex marks it as an incomplete recovery — the phone falls silent again, no signal, no way home. But people are still arriving. Maybe that's the answer for now: not an answer, a beginning.",
+      codexNote:"Book 5 chapter. Classification: story / hidden quest. Quest: The Last Message — recovered data incomplete; memory reconstruction may fail.",
+      systemHints:["Read the chapter artwork and journal entry.", "Book 5 chapters unlock sequentially.", "No combat."],
+      quest:{
+        title:"The Charge",
+        desc:"Read and complete Book 5, Chapter 7: The Charge.",
+        rewards:[{type:"xp",value:1300,label:"+1300 XP"}],
+        outcome:"Not an answer. A beginning. Pieces of what was lost are still finding their way back, one by one — until a way forward is found, everyone walks together.",
+        hasBattle:false,
+        memoryFragment:"Mother"
+      }
+    },
+    {
+      id:78, book:5, title:"Same Firm, New Sign",
+      quote:"Some faces the mind forgets. Some names the heart does not.",
+      image:"book5/b5ch8_compress.png",
+      narrative:"Dr. AA's clinic sign again, rebuilt out here of all places. He remembers San even though she doesn't remember him — old reports, injury documentation, a boss she used to work for who also made it through. He mentions a name: Robin. San has no memory of it, only a feeling she doesn't like about what hearing it did to her. The Codex flags it: Memory Fragment Detected. Subject: Robin. Status: LOCKED.",
+      codexNote:"Book 5 chapter. Classification: story / memory fragment. Subject: Robin. Status: LOCKED. Recovery condition: unknown.",
+      systemHints:["Read the chapter artwork and journal entry.", "Book 5 chapters unlock sequentially.", "No combat."],
+      quest:{
+        title:"Same Firm, New Sign",
+        desc:"Read and complete Book 5, Chapter 8: Same Firm, New Sign.",
+        rewards:[{type:"xp",value:1200,label:"+1200 XP"}],
+        outcome:"Robin is only a name. A name that means nothing. And somehow, that feels worse than remembering.",
+        hasBattle:false
+      }
     }
 ],
   partyMembers: [
@@ -2021,6 +2176,43 @@ const GAME_DATA = {
         { name: "Detect", icon: "🔍", cost: 5, effect: "reveal", target: "self", type: "buff", desc: "Reveal hidden traps and secrets." },
         { name: "Hope's Light", icon: "💫", cost: 30, effect: "heal_party", target: "all_allies", type: "heal", desc: "Restore hope to all allies. Heal + remove fear." }
       ]
+    },
+    {
+      // Book V quest ally — not yet recruited (joined:false). Recruitment
+      // should flip joined/active to true once the actual Book V chapter
+      // that recruits him exists; see codexRecruitQuestAlly().
+      id: "aldric", name: "Ser Aldric", role: "Knight", icon: "🛡️",
+      desc: "A knight who spent years letting the Cult of the Closed Eye decide what he should do next. Book V's opening arc is him choosing, for the first time, to finish something himself. Distinct from Joel's protective Paladin kit — Aldric is a frontline duelist who gets stronger the worse the fight is going, not a shield-bearer.",
+      stats: { hp: 150, maxHP: 150, mp: 70, maxMP: 70, atk: 95, def: 100, mag: 30, spd: 60 },
+      skills: ["Lance Strike", "Guard the Line", "Second Wind", "Unbroken Resolve"],
+      joined: false, active: false,
+      spells: [
+        { name: "Lance Strike", icon: "🛡️", cost: 0, damage: "3d8", target: "enemy", type: "attack", desc: "A disciplined thrust. Basic attack." },
+        { name: "Guard the Line", icon: "🧱", cost: 15, effect: "buff_def", target: "self", type: "defense", desc: "Draws the enemy's focus and holds. +5 DEF for 2 turns." },
+        { name: "Second Wind", icon: "🌬️", cost: 20, heal: "2d8+8", target: "self", type: "heal", desc: "He no longer waits to be rescued — steadies himself and recovers." },
+        { name: "Unbroken Resolve", icon: "⚔️", cost: 30, damage: "4d10", target: "enemy", type: "attack", desc: "A choice made and kept. Deals bonus damage when his own HP is below 40%." }
+      ]
+    },
+    {
+      // Book V quest ally — not yet recruited (joined:false). Recruited
+      // after the Sister Wren boss fight ("The Last Believer"); see
+      // codexRecruitQuestAlly(). Role is deliberately "support" rather than
+      // a second pure healer — Eliz already covers Heal/Resurrect/Purify/
+      // Bless, so Wren leans into party-wide wards and mitigation instead,
+      // plus a unique tie to the new affliction system (see Quiet
+      // Conviction below): she was in the Cult, so she's the one party
+      // member who can cleanse a Closed Eye affliction mid-battle.
+      id: "wren", name: "Sister Wren", role: "Devout", icon: "🕯️",
+      desc: "The last true believer of the Cult of the Closed Eye — until she wasn't. Joins after choosing to stop, not after being defeated in the way a monster is defeated. Her kit is about conviction and protection rather than raw restoration.",
+      stats: { hp: 90, maxHP: 90, mp: 130, maxMP: 130, atk: 20, def: 55, mag: 75, spd: 55 },
+      skills: ["Ward Strike", "Sanctuary Ward", "Quiet Conviction", "Last Rites"],
+      joined: false, active: false,
+      spells: [
+        { name: "Ward Strike", icon: "🕯️", cost: 0, damage: "2d6", target: "enemy", type: "attack", desc: "A censer swung with more resolve than force. Basic attack." },
+        { name: "Sanctuary Ward", icon: "🛡️", cost: 20, effect: "party_shield_mitigate", target: "all_allies", type: "defense", desc: "A ward built from what's left of her faith — reduces incoming damage to the party for 2 turns." },
+        { name: "Quiet Conviction", icon: "👁️", cost: 15, effect: "cleanse_affliction", target: "ally", type: "heal", desc: "She recognizes the Closed Eye's hold better than anyone. Removes an affliction from an ally." },
+        { name: "Last Rites", icon: "✨", cost: 35, heal: "3d8+10", target: "all_allies", type: "heal", desc: "The last thing she still believes is worth doing. Restores the whole party." }
+      ]
     }
   ],
   xpPerLevel: [0, 100, 300, 600, 1000, 1500, 2100, 2800, 3600, 4500, 5500, 6600, 7800, 9100, 10500, 12000, 13600, 15300, 17100, 19000]
@@ -2040,7 +2232,9 @@ const CODEX_EQUIPMENT_RULES = {
   joel:{weapon:['sword_shield'],armor:['heavy'],accessory:['any']},
   zaki:{weapon:['two_handed_sword'],armor:['heavy'],accessory:['any']},
   aisyah:{weapon:['twin_blades'],armor:['light'],accessory:['any']},
-  senedra:{weapon:['bow'],armor:['light'],accessory:['any']}
+  senedra:{weapon:['bow'],armor:['light'],accessory:['any']},
+  aldric:{weapon:['knight_lance'],armor:['heavy'],accessory:['any']},
+  wren:{weapon:['wren_censer'],armor:['caster'],accessory:['any']}
 };
 const CODEX_EQUIPMENT = [
   {id:'san_focus_basic',name:'Aether Focus',slot:'weapon',family:'san_focus',owner:'san',atk:1,magic:1},
@@ -2237,11 +2431,12 @@ function codexEquipmentBonus(characterId) {
 function codexEffectiveStats(characterId, baseStats) {
   const b = baseStats || {};
   const bonus = codexEquipmentBonus(characterId);
+  const afflicted = codexAfflictionModifiers(characterId);
   return {
     ...b,
     atk: Number(b.atk || b.attack || 0) + bonus.atk,
-    magic: Number(b.magic || b.mag || 0) + bonus.magic,
-    defense: Number(b.defense || b.def || b.ac || 0) + bonus.defense,
+    magic: Math.round((Number(b.magic || b.mag || 0) + bonus.magic) * afflicted.magMultiplier),
+    defense: Math.round((Number(b.defense || b.def || b.ac || 0) + bonus.defense) * afflicted.defMultiplier),
     hp: Number(b.hp || 0) + bonus.hp,
     mp: Number(b.mp || 0) + bonus.mp
   };
@@ -2350,6 +2545,10 @@ const CORE_PARTY_IDS = new Set([
   'san', 'joel', 'aisyah', 'mezstorm', 'eliz', 'senedra', 'zaki'
 ]);
 const FAMILIAR_IDS = new Set(['soel']);
+// Book V quest allies: recruited later, playable in battle, but not part of
+// the fixed core-7 formation and never force-activated on load like the
+// core 7 or Soel are.
+const QUEST_ALLY_IDS = new Set(['aldric', 'wren']);
 // Core starting party used when migrating/loading legacy saves.
 const INITIAL_PARTY_IDS = new Set(['san', 'joel', 'aisyah', 'mezstorm', 'eliz', 'senedra', 'zaki']);
 
@@ -2361,12 +2560,96 @@ function isFamiliar(member) {
   return !!member && FAMILIAR_IDS.has(member.id);
 }
 
+function isQuestAlly(member) {
+  return !!member && QUEST_ALLY_IDS.has(member.id);
+}
+
 function isFixedPartyMember(member) {
   return isCorePartyMember(member) || isFamiliar(member);
 }
 
-function canBenchPartyMember() {
-  return false;
+/* ============================================================
+   PARTY BENCH / STRONGHOLD SYSTEM
+   The active field roster is capped at 7 (matching the founding core
+   seven). San and Soel are exempt from benching entirely — everyone
+   else, once JOINED, can be freely swapped between "active" (in the
+   field) and benched at the Stronghold. This is what makes a quest ally
+   like Aldric joining actually mean something: since the core seven
+   already fill the cap, bringing him into the field requires benching
+   someone first, exactly the "leaving one party member at the
+   stronghold" trade-off this was built for.
+   ============================================================ */
+const MAX_ACTIVE_PARTY_SIZE = 7;
+
+function codexActiveRosterCount() {
+  return (gameState.party || []).filter(p =>
+    p.active && p.joined && !FAMILIAR_IDS.has(p.id)
+  ).length;
+}
+
+function codexCanBenchMember(characterId) {
+  const member = (gameState.party || []).find(p => p.id === characterId);
+  if (!member || !member.joined || !member.active) return false;
+  if (characterId === 'san') return false; // protagonist, always in the field
+  if (FAMILIAR_IDS.has(characterId)) return false; // Soel is exempt
+  return true;
+}
+
+function codexBenchMember(characterId) {
+  if (!codexCanBenchMember(characterId)) return false;
+  const member = gameState.party.find(p => p.id === characterId);
+  member.active = false;
+  saveGame();
+  if (typeof showNotification === 'function') {
+    showNotification(member.name + ' returns to the Stronghold.');
+  }
+  if (typeof renderParty === 'function') renderParty();
+  return true;
+}
+
+function codexActivateMember(characterId) {
+  const member = (gameState.party || []).find(p => p.id === characterId);
+  if (!member || !member.joined || member.active) return false;
+  if (codexActiveRosterCount() >= MAX_ACTIVE_PARTY_SIZE) {
+    if (typeof showNotification === 'function') {
+      showNotification('The active roster is full (' + MAX_ACTIVE_PARTY_SIZE + '). Bench someone at the Stronghold first.');
+    }
+    return false;
+  }
+  member.active = true;
+  saveGame();
+  if (typeof showNotification === 'function') {
+    showNotification(member.name + ' joins the active party.');
+  }
+  if (typeof renderParty === 'function') renderParty();
+  return true;
+}
+
+// Flips a quest ally's joined flag once their actual recruitment chapter
+// fires. Respects the active-roster cap: if the field is already full
+// (which it will be, since the core seven fill it exactly), the new
+// recruit joins but waits at the Stronghold until the player benches
+// someone to make room for them.
+function codexRecruitQuestAlly(characterId) {
+  if (!QUEST_ALLY_IDS.has(characterId)) return false;
+  const member = (gameState.party || []).find(p => p.id === characterId);
+  if (!member) return false;
+  member.joined = true;
+
+  if (codexActiveRosterCount() < MAX_ACTIVE_PARTY_SIZE) {
+    member.active = true;
+    if (typeof showNotification === 'function') {
+      showNotification(member.name + ' has joined the party.');
+    }
+  } else {
+    member.active = false;
+    if (typeof showNotification === 'function') {
+      showNotification(member.name + ' has joined, but the active roster is full. Visit the Stronghold to bring them into the field.');
+    }
+  }
+
+  saveGame();
+  return true;
 }
 
 // ============================================================
@@ -2389,6 +2672,96 @@ function getPotions() {
   return gameState.potions;
 }
 
+/* ============================================================
+   CODEX AFFLICTIONS — "The Closed Eye"
+   Deliberately NOT a generic poison/curse status system. The Cult of
+   the Closed Eye doesn't damage the body — it dulls conviction. Rather
+   than a HP-ticking DoT, an affliction reads in-fiction as the
+   afflicted member's own Codex entry going partially LOCKED (reusing
+   the game's existing "MEMORY FRAGMENT DETECTED — Status: LOCKED"
+   device from the Book V pages), and mechanically softens their MAG
+   and DEF by a percentage rather than draining a resource over time.
+   Cured with Purifying Incense at the Temple, or in-battle only by
+   Sister Wren's Quiet Conviction (she was in the Cult; she recognizes
+   it faster than anyone else can).
+   ============================================================ */
+const CODEX_AFFLICTION_DEFS = {
+  closedEye: {
+    name: 'Closed Eye',
+    icon: '👁️‍🗨️',
+    desc: "The Cult's doctrine doesn't wound — it dulls. This member's Codex entry reads as partially LOCKED until purified.",
+    magPenaltyPct: 15,
+    defPenaltyPct: 10
+  }
+};
+
+function getAfflictions() {
+  if (!Array.isArray(gameState.afflictions)) gameState.afflictions = [];
+  return gameState.afflictions;
+}
+
+function getMemberAfflictions(characterId) {
+  return getAfflictions().filter(a => a.memberId === characterId);
+}
+
+function isAfflicted(characterId) {
+  return getMemberAfflictions(characterId).length > 0;
+}
+
+// Ready-to-call hook for future Book V chapter/battle code — nothing in
+// the game triggers this yet, since the Cult of the Closed Eye chapters
+// aren't wired into GAME_DATA.chapters yet.
+function codexInflictAffliction(characterId, afflictionId) {
+  if (!CODEX_AFFLICTION_DEFS[afflictionId]) return false;
+  const list = getAfflictions();
+  if (list.some(a => a.memberId === characterId && a.afflictionId === afflictionId)) return false; // no stacking
+  list.push({ memberId: characterId, afflictionId, appliedAt: Date.now() });
+  saveGame();
+  return true;
+}
+
+function codexCureAffliction(characterId, afflictionId, useIncense) {
+  const list = getAfflictions();
+  const idx = list.findIndex(a => a.memberId === characterId && a.afflictionId === afflictionId);
+  if (idx < 0) return false;
+
+  if (useIncense) {
+    const materials = getMaterials();
+    if (Number(materials.purifyingIncense || 0) < 1) {
+      if (typeof showNotification === 'function') showNotification('Not enough Purifying Incense.');
+      return false;
+    }
+    materials.purifyingIncense -= 1;
+  }
+
+  list.splice(idx, 1);
+  saveGame();
+  return true;
+}
+
+function getMaterials() {
+  if (!gameState.materials || typeof gameState.materials !== 'object') {
+    gameState.materials = { purifyingIncense: 0 };
+  }
+  if (!Number.isFinite(Number(gameState.materials.purifyingIncense))) gameState.materials.purifyingIncense = 0;
+  return gameState.materials;
+}
+
+// Applies affliction penalties on top of equipment bonuses. Called from
+// codexEffectiveStats() so every stat consumer (battle, previews, spell
+// damage) automatically respects afflictions without needing its own check.
+function codexAfflictionModifiers(characterId) {
+  const afflictions = getMemberAfflictions(characterId);
+  let magMultiplier = 1, defMultiplier = 1;
+  afflictions.forEach(a => {
+    const def = CODEX_AFFLICTION_DEFS[a.afflictionId];
+    if (!def) return;
+    magMultiplier *= (1 - Number(def.magPenaltyPct || 0) / 100);
+    defMultiplier *= (1 - Number(def.defPenaltyPct || 0) / 100);
+  });
+  return { magMultiplier, defMultiplier };
+}
+
 function createInitialGameState() {
   return {
     currentBook: 1,
@@ -2397,6 +2770,8 @@ function createInitialGameState() {
     level: 1,
     gold: 0,
     potions: { hpPotion: 3, mpPotion: 5, elixir: 0 },
+    materials: { purifyingIncense: 0 },
+    afflictions: [],
     inventory: [],
     memories: [],
     completedChapters: [],
@@ -2446,6 +2821,8 @@ function applySaveData(data) {
     level: 1,
     gold: 0,
     potions: { hpPotion: 3, mpPotion: 5, elixir: 0 },
+    materials: { purifyingIncense: 0 },
+    afflictions: [],
     inventory: [],
     memories: [],
     completedChapters: [],
@@ -2472,17 +2849,20 @@ function applySaveData(data) {
   // Normalize arrays that older saves may have omitted.
   const arrayFields = [
     'inventory', 'memories', 'completedChapters',
-    'activeQuests', 'completedQuests', 'unlockedChapters', 'readJournal'
+    'activeQuests', 'completedQuests', 'unlockedChapters', 'readJournal', 'afflictions'
   ];
   arrayFields.forEach(key => {
     if (!Array.isArray(gameState[key])) gameState[key] = [];
   });
 
-  // A save with a malformed (non-object) potions field shouldn't linger —
-  // getPotions() also self-heals, but fixing it here keeps gameState
-  // consistent immediately after load rather than on next access.
+  // A save with a malformed (non-object) potions/materials field shouldn't
+  // linger — getPotions()/getMaterials() also self-heal, but fixing it
+  // here keeps gameState consistent immediately after load.
   if (!gameState.potions || typeof gameState.potions !== 'object') {
     gameState.potions = { hpPotion: 3, mpPotion: 5, elixir: 0 };
+  }
+  if (!gameState.materials || typeof gameState.materials !== 'object') {
+    gameState.materials = { purifyingIncense: 0 };
   }
 
   // Older saves can contain a stale/partial battle object. Never resume an
@@ -2533,12 +2913,16 @@ function applySaveData(data) {
     });
   }
 
-  // Codex fixed-party rule: the seven core members are always active.
-  // Soel is a familiar and is never treated as a benchable party slot.
+  // Codex fixed-party rule: the seven core members are always JOINED — they
+  // can never be un-recruited. Whether they're currently ACTIVE (in the
+  // field) or benched at the Stronghold is a separate question, handled by
+  // the laterRecruitJoined check above. This used to also force `active`
+  // back to true unconditionally here, which silently undid any bench
+  // choice on every single save/load — that was the actual reason a
+  // bench/swap mechanic could never stick. Soel is still exempt entirely.
   gameState.party.forEach(p => {
     if (CORE_PARTY_IDS.has(p.id) && p.joined !== false) {
       p.joined = true;
-      p.active = true;
     }
     if (FAMILIAR_IDS.has(p.id)) {
       p.joined = true;
@@ -2559,9 +2943,9 @@ function applySaveData(data) {
   gameState.xp = Math.max(0, Number(gameState.xp) || 0);
   gameState.gold = Math.max(0, Number(gameState.gold) || 0);
   gameState.level = Math.max(1, Number(gameState.level) || 1);
-  gameState.currentBook = [1, 2, 3, 4].includes(Number(gameState.currentBook))
+  gameState.currentBook = [1, 2, 3, 4, 5].includes(Number(gameState.currentBook))
     ? Number(gameState.currentBook) : 1;
-  gameState.selectedBook = [1, 2, 3, 4].includes(Number(gameState.selectedBook))
+  gameState.selectedBook = [1, 2, 3, 4, 5].includes(Number(gameState.selectedBook))
     ? Number(gameState.selectedBook) : gameState.currentBook;
 
   // Legacy saves may have chapter IDs as strings.
@@ -2971,6 +3355,38 @@ function companionAIAction(member, battle) {
   const mp = Number(member.currentMP || 0);
   const active = getActiveParty();
 
+  // Emergency potion fallback — highest priority for every companion, not
+  // just Eliz. This exists because the party could otherwise wipe when
+  // Eliz is out of MP (or has already used her once-per-battle
+  // Resurrection) and no one else has a way to bring a fallen ally back
+  // or keep themselves standing. Any companion's turn can spend a shared
+  // potion when there's a real emergency; ordinary healing/skills still
+  // take priority the rest of the time.
+  const roster = gameState.party.filter(p => p.active);
+  const eliz = roster.find(p => p.id === 'eliz');
+  const elizCanResurrect = !!eliz && eliz.currentHP > 0 &&
+    Number(eliz.currentMP || 0) >= 30 && !battle._elizResurrectionUsed;
+  const fallenAlly = roster.find(p =>
+    p.currentHP <= 0 && p.id !== 'eliz' && p.id !== 'soel'
+  );
+  if (fallenAlly && !elizCanResurrect) {
+    const potions = getPotions();
+    if (Number(potions.hpPotion || 0) > 0) {
+      return {type:'item', item:'hpPotion', targetId: fallenAlly.id};
+    }
+    if (Number(potions.elixir || 0) > 0) {
+      return {type:'item', item:'elixir', targetId: fallenAlly.id};
+    }
+  }
+  // No one can revive right now and this member themselves is critically
+  // low — save them with a potion rather than risking they're next to fall.
+  if (hpRatio > 0 && hpRatio <= 0.25 && mp < 15) {
+    const potions = getPotions();
+    if (Number(potions.hpPotion || 0) > 0) {
+      return {type:'item', item:'hpPotion', targetId: member.id};
+    }
+  }
+
   // Zaki — Fighter.
   if (member.id === 'zaki') {
     const bossRatio = battle.boss ? Number(battle.boss.hp || 0) / Number(battle.boss.maxHP || 1) : 1;
@@ -2998,6 +3414,42 @@ function companionAIAction(member, battle) {
     if (mp >= 20 && hpRatio <= 0.50 && !battle._divineProtectionUsed) {
       battle._divineProtectionUsed = true;
       return {type:'skill', skill:'divine_protection'};
+    }
+  }
+
+  // Ser Aldric — Knight. Gets stronger the worse the fight is going for
+  // him personally, rather than being a shield-bearer like Joel.
+  if (member.id === 'aldric') {
+    if (hpRatio > 0 && hpRatio <= 0.35 && mp >= 20) {
+      return {type:'skill', skill:'Second Wind'};
+    }
+    if (hpRatio > 0 && hpRatio <= 0.55 && mp >= 15 && Number(member._defBonusTurns || 0) <= 0) {
+      return {type:'skill', skill:'Guard the Line'};
+    }
+    if (mp >= 30) {
+      return {type:'skill', skill:'Unbroken Resolve'};
+    }
+  }
+
+  // Sister Wren — Devout. Priority: cleanse an affliction (her unique tie
+  // to the Cult), then emergency party healing, then a preventive ward —
+  // rather than duplicating Eliz's single-target Heal/Resurrection kit.
+  if (member.id === 'wren') {
+    const afflictedAlly = getAfflictions().find(a => {
+      const ally = gameState.party.find(p => p.id === a.memberId && p.active && p.currentHP > 0);
+      return !!ally;
+    });
+    if (afflictedAlly && mp >= 15) {
+      return {type:'skill', skill:'Quiet Conviction'};
+    }
+    const lowestLiving = active
+      .filter(p => p.currentHP > 0)
+      .sort((a,b) => (a.currentHP/a.stats.maxHP) - (b.currentHP/b.stats.maxHP))[0];
+    if (lowestLiving && (lowestLiving.currentHP / lowestLiving.stats.maxHP) <= 0.5 && mp >= 35) {
+      return {type:'skill', skill:'Last Rites'};
+    }
+    if (mp >= 20 && Number(member._mitigationTurns || 0) <= 0) {
+      return {type:'skill', skill:'Sanctuary Ward'};
     }
   }
 
@@ -3114,6 +3566,7 @@ function executeCompanionSkill(member, skill, battle) {
     spend(15);
     gameState.party.filter(p => p.active && p.currentHP > 0).forEach(p => {
       p._battleCryBonus = 3;
+      p._battleCryBonusTurns = 2;
     });
     addCombatLog('📢 ' + member.name.toUpperCase() + ' — BATTLE CRY!', 'skill');
     addCombatLog('Party ATK +3 for 2 turns!', 'info');
@@ -3124,6 +3577,7 @@ function executeCompanionSkill(member, skill, battle) {
   if (skill === 'iron_will' && member.currentMP >= 15) {
     spend(15);
     member._defBonus = 4;
+    member._defBonusTurns = 2;
     addCombatLog('🛡️ ' + member.name.toUpperCase() + ' — IRON WILL!', 'skill');
     addCombatLog(member.name + ' DEF +4!', 'info');
     battle.narrative = member.name + ' braces for the incoming attack.';
@@ -3133,7 +3587,7 @@ function executeCompanionSkill(member, skill, battle) {
   if (skill === 'vanguard_charge' && member.currentMP >= 20) {
     spend(20);
     const effective = codexEffectiveStats(member.id, member.stats);
-    const atkMod = getModifier(effective.atk);
+    const atkMod = getModifier(effective.atk) + Number(member._battleCryBonus || 0);
     const roll = rollDie(20);
     let dmg;
     if (roll === 20) {
@@ -3152,12 +3606,102 @@ function executeCompanionSkill(member, skill, battle) {
 }
 
 
+function executeAldricSkill(member, skill, battle) {
+  if (!member || !battle || !battle.active || member.id !== 'aldric') return false;
+  const boss = battle.boss;
+
+  if (skill === 'Guard the Line' && member.currentMP >= 15) {
+    member.currentMP = Math.max(0, member.currentMP - 15);
+    member._defBonus = 5;
+    member._defBonusTurns = 2;
+    addCombatLog('🧱 ' + member.name.toUpperCase() + ' — GUARD THE LINE!', 'skill');
+    addCombatLog(member.name + ' DEF +5 for 2 turns.', 'info');
+    battle.narrative = member.name + ' hardens his stance and holds the line.';
+    return true;
+  }
+
+  if (skill === 'Second Wind' && member.currentMP >= 20) {
+    member.currentMP = Math.max(0, member.currentMP - 20);
+    const heal = rollDice(2, 8) + 8;
+    member.currentHP = Math.min(Number(member.stats?.maxHP || 1), member.currentHP + heal);
+    addCombatLog('🌬️ ' + member.name.toUpperCase() + ' — SECOND WIND!', 'skill');
+    addCombatLog(member.name + ' recovers ' + heal + ' HP.', 'info');
+    battle.narrative = member.name + ' steadies himself — he no longer waits to be rescued.';
+    return true;
+  }
+
+  if (skill === 'Unbroken Resolve' && member.currentMP >= 30) {
+    member.currentMP = Math.max(0, member.currentMP - 30);
+    const hpRatio = Number(member.currentHP || 0) / Number(member.stats?.maxHP || 1);
+    let dmg = rollDice(4, 10) + codexCombatAttackBonus(member.id) + Number(member._battleCryBonus || 0);
+    if (hpRatio > 0 && hpRatio <= 0.4) dmg = Math.round(dmg * 1.5);
+    boss.hp = Math.max(0, boss.hp - dmg);
+    addCombatLog('⚔️ ' + member.name.toUpperCase() + ' — UNBROKEN RESOLVE! ' + dmg + ' damage' +
+      (hpRatio <= 0.4 ? ' (a choice made and kept)' : '') + '!', 'skill');
+    battle.narrative = member.name + ' refuses to become the echo — a choice made and kept.';
+    return true;
+  }
+
+  return false;
+}
+
+function executeWrenSkill(member, skill, battle) {
+  if (!member || !battle || !battle.active || member.id !== 'wren') return false;
+  const party = gameState.party || [];
+
+  if (skill === 'Quiet Conviction' && member.currentMP >= 15) {
+    const afflictions = getAfflictions();
+    const record = afflictions.find(a => {
+      const ally = party.find(p => p.id === a.memberId && p.active && p.currentHP > 0);
+      return !!ally;
+    });
+    if (!record) return false;
+    member.currentMP = Math.max(0, member.currentMP - 15);
+    const ally = party.find(p => p.id === record.memberId);
+    codexCureAffliction(record.memberId, record.afflictionId, false);
+    addCombatLog('👁️ ' + member.name.toUpperCase() + ' — QUIET CONVICTION!', 'skill');
+    addCombatLog(member.name + ' recognizes the Closed Eye\'s hold on ' + (ally ? ally.name : 'an ally') + ' and lifts it.', 'info');
+    battle.narrative = member.name + ' understands this better than anyone — and lifts it.';
+    return true;
+  }
+
+  if (skill === 'Sanctuary Ward' && member.currentMP >= 20) {
+    member.currentMP = Math.max(0, member.currentMP - 20);
+    party.filter(p => p.active && p.currentHP > 0).forEach(p => {
+      p._mitigation = 8;
+      p._mitigationTurns = 2;
+    });
+    addCombatLog('🛡️ ' + member.name.toUpperCase() + ' — SANCTUARY WARD!', 'skill');
+    addCombatLog('A ward built from what\'s left of her faith protects the party.', 'info');
+    battle.narrative = member.name + ' raises a ward around the party.';
+    return true;
+  }
+
+  if (skill === 'Last Rites' && member.currentMP >= 35) {
+    member.currentMP = Math.max(0, member.currentMP - 35);
+    let healedAny = false;
+    party.filter(p => p.active && p.currentHP > 0).forEach(p => {
+      const heal = rollDice(3, 8) + 10;
+      const before = p.currentHP;
+      p.currentHP = Math.min(Number(p.stats?.maxHP || 1), p.currentHP + heal);
+      if (p.currentHP > before) healedAny = true;
+    });
+    addCombatLog('✨ ' + member.name.toUpperCase() + ' — LAST RITES!', 'skill');
+    addCombatLog('The last thing she still believes is worth doing. The party is restored.', 'info');
+    battle.narrative = member.name + ' pours everything she has left into the party.';
+    return healedAny;
+  }
+
+  return false;
+}
+
 function executeJoelSkill(member, skill, battle) {
   if (!member || !battle || !battle.active || member.id !== 'joel') return false;
   if (skill === 'divine_protection' && member.currentMP >= 20) {
     member.currentMP = Math.max(0, member.currentMP - 20);
     gameState.party.filter(p => p.active && p.currentHP > 0).forEach(p => {
-      p._divineProtection = 1;
+      p._mitigation = 6;
+      p._mitigationTurns = 2;
     });
     addCombatLog('🛡️ ' + member.name.toUpperCase() + ' — DIVINE PROTECTION!', 'skill');
     addCombatLog('The party is shielded!', 'info');
@@ -3350,6 +3894,29 @@ function aiAction(member) {
 
   // Companion AI decision layer.
   const decision = companionAIAction(member, battle);
+  if (decision && decision.type === 'item') {
+    const potions = getPotions();
+    const def = CODEX_POTION_DEFS[decision.item];
+    if (def && Number(potions[decision.item] || 0) > 0) {
+      potions[decision.item] -= 1;
+      const target = gameState.party.find(p => p.id === decision.targetId) || member;
+      const wasFallen = target.currentHP <= 0;
+      const gains = [];
+      if (def.restoreHP) {
+        healPartyMember(target.id, def.restoreHP);
+        gains.push('+' + def.restoreHP + ' HP');
+      }
+      if (def.restoreMP) {
+        restoreMP(target.id, def.restoreMP);
+        gains.push('+' + def.restoreMP + ' MP');
+      }
+      const verb = wasFallen ? ' uses a ' + def.name + ' to revive ' : ' uses a ' + def.name + ' on ';
+      addCombatLog(def.icon + ' ' + member.name + verb + target.name +
+        ' (' + gains.join(' and ') + ')!', 'heal');
+      battle.narrative = member.name + ' uses a ' + def.name + '.';
+      return;
+    }
+  }
   if (decision && decision.type === 'skill') {
     if (typeof executeCompanionSkill === 'function' &&
         executeCompanionSkill(member, decision.skill, battle)) return;
@@ -3357,6 +3924,10 @@ function aiAction(member) {
         executeJoelSkill(member, decision.skill, battle)) return;
     if (typeof executeElizSkill === 'function' &&
         executeElizSkill(member, decision.skill, battle)) return;
+    if (typeof executeAldricSkill === 'function' &&
+        executeAldricSkill(member, decision.skill, battle)) return;
+    if (typeof executeWrenSkill === 'function' &&
+        executeWrenSkill(member, decision.skill, battle)) return;
   }
 
   const narrativeByRole = {
@@ -3460,7 +4031,9 @@ function aiAction(member) {
   }
 
   const effectiveMember = codexEffectiveStats(member.id, member.stats);
-  const atkMod = getModifier(effectiveMember.atk);
+  // _battleCryBonus (Zaki's Battle Cry) was previously set but never read —
+  // party attacks are now actually stronger while it's active.
+  const atkMod = getModifier(effectiveMember.atk) + Number(member._battleCryBonus || 0);
   const roll = rollDie(20);
   const total = roll + atkMod;
 
@@ -3493,7 +4066,12 @@ function bossAction() {
 
   const target = activeParty[Math.floor(Math.random() * activeParty.length)];
   const rawDamage = Math.max(1, (phase.damage || 1) + rollDie(6));
-  const defenseBonus = codexCombatDefenseBonus(target.id);
+  // Was previously only equipment-based. _defBonus (Iron Will) and
+  // _mitigation (Divine Protection / Sanctuary Ward) were being SET by
+  // their skills but never actually READ anywhere — those buffs were
+  // cosmetic-only. Now they actually reduce incoming damage.
+  const defenseBonus = codexCombatDefenseBonus(target.id) +
+    Number(target._defBonus || 0) + Number(target._mitigation || 0);
   const dmg = Math.max(1, rawDamage - defenseBonus);
 
   damagePartyMember(target.id, dmg);
@@ -3539,6 +4117,22 @@ function advanceBattleTurn() {
       // a once-per-battle flag — Eliz could only ever heal a single time in
       // an entire fight. Reset it here so it behaves as its name promises.
       battle._elizHealUsedThisRound = false;
+
+      // Timed party buffs (Battle Cry / Iron Will / Divine Protection /
+      // Sanctuary Ward) tick down once per round and clear when expired.
+      // These were previously set once and never removed — now they
+      // actually respect the "2 turns" duration their flavor text promises.
+      (gameState.party || []).forEach(p => {
+        if (p._battleCryBonusTurns > 0 && --p._battleCryBonusTurns <= 0) {
+          p._battleCryBonus = 0;
+        }
+        if (p._defBonusTurns > 0 && --p._defBonusTurns <= 0) {
+          p._defBonus = 0;
+        }
+        if (p._mitigationTurns > 0 && --p._mitigationTurns <= 0) {
+          p._mitigation = 0;
+        }
+      });
     }
     attempts++;
     const member = getCurrentBattleMember();
@@ -4126,6 +4720,8 @@ const CODEX_TRADERS = [
       {n:'Traveler Guard', type:'equipment', slot:'armor', family:'light', defense:2, price:50, d:'Simple protective gear for the road.'},
       {n:'Apprentice Focus', type:'equipment', slot:'weapon', family:'san_focus', magic:1, price:55, d:'A modest focus for a beginning sorcerer.'},
       {n:'Traveler Charm', type:'equipment', slot:'accessory', family:'any', hp:3, price:40, d:'A small charm carried by travelers.'},
+      {n:'Knight\'s Lance', type:'equipment', slot:'weapon', family:'knight_lance', atk:3, price:60, d:"Ser Aldric's weapon family. Basic but reliable."},
+      {n:'Devout\'s Censer', type:'equipment', slot:'weapon', family:'wren_censer', magic:3, price:60, d:"Sister Wren's weapon family. A censer swung with conviction."},
       {n:'HP Potion', type:'potion', potionId:'hpPotion', price:15, d:'Restores ' + CODEX_POTION_DEFS.hpPotion.restoreHP + ' HP in battle.'},
       {n:'MP Potion', type:'potion', potionId:'mpPotion', price:20, d:'Restores ' + CODEX_POTION_DEFS.mpPotion.restoreMP + ' MP in battle.'},
       {n:'Potion Refill Bundle', type:'potionBundle', hpPotion:3, mpPotion:5, price:130, d:'Tops up 3 HP Potions and 5 MP Potions in one go.'}
@@ -4140,7 +4736,20 @@ const CODEX_TRADERS = [
       {n:'Staff of the Magi', type:'equipment', slot:'weapon', family:'san_focus', magic:7, atk:2, price:2200, d:'BG2-inspired arcane staff.'},
       {n:'Ring of the Ram', type:'equipment', slot:'accessory', family:'any', magic:4, price:900, d:'BG2-inspired magical ring.'},
       {n:'Girdle of Hill Giant Strength', type:'equipment', slot:'accessory', family:'any', atk:5, price:1100, d:'BG2-inspired strength-enhancing belt.'},
-      {n:'Flail of Ages', type:'equipment', slot:'weapon', family:'any', atk:8, price:2400, d:'BG2-inspired enchanted flail.'}
+      {n:'Flail of Ages', type:'equipment', slot:'weapon', family:'any', atk:8, price:2400, d:'BG2-inspired enchanted flail.'},
+      {n:'Lance of the Unbroken', type:'equipment', slot:'weapon', family:'knight_lance', atk:7, defense:2, price:2000, d:"A finer weapon for Ser Aldric's chosen family."},
+      {n:'Censer of Quiet Conviction', type:'equipment', slot:'weapon', family:'wren_censer', magic:7, hp:5, price:2000, d:"A finer weapon for Sister Wren's chosen family."}
+    ]
+  },
+  {
+    // Gated by level for now (roughly Book V's expected range) as a
+    // placeholder — swap zoneLv-gating for an actual Book V chapter/Temple-
+    // discovery flag once those chapters exist.
+    n:'Temple Custodian', title:'Keeper of the Restored Temple', zone:'The Temple', zoneLv:20,
+    icon:'🕯️',
+    greeting:'The Custodian tends what the Cult left in ruins. "Take what you need. No one should have to carry a locked page alone."',
+    stock:[
+      {n:'Purifying Incense', type:'material', materialId:'purifyingIncense', price:35, d:'Burned at the Temple to cure a Closed Eye affliction.'}
     ]
   }
 ];
@@ -4201,6 +4810,16 @@ function buyFromCodexTrader(traderName,itemIndex){
     const potions = getPotions();
     potions.hpPotion = Number(potions.hpPotion || 0) + Number(item.hpPotion || 0);
     potions.mpPotion = Number(potions.mpPotion || 0) + Number(item.mpPotion || 0);
+    gameState.gold -= price;
+    saveGame(); renderCodexTraderPanel();
+    showNotification('Bought ' + item.n + ' for ' + price + 'G.');
+    if (typeof renderTrader === 'function') renderTrader();
+    return;
+  }
+
+  if (item.type === 'material') {
+    const materials = getMaterials();
+    materials[item.materialId] = Number(materials[item.materialId] || 0) + 1;
     gameState.gold -= price;
     saveGame(); renderCodexTraderPanel();
     showNotification('Bought ' + item.n + ' for ' + price + 'G.');
@@ -4650,6 +5269,108 @@ function getUnmappedRoadRegular(id) {
   return CODEX_UNMAPPED_ROAD_REGULAR_POOL.find(e => e.id === id) || null;
 }
 
+function renderCodexTempleCard() {
+  // Available from the same point the Unmapped Road opens up (Book 4 done,
+  // or level 20+) rather than gated behind Book V's level-30 start — the
+  // Temple's cure/resurrection utility is needed well before Book V,
+  // especially since a party can wipe from Eliz running out of MP long
+  // before hitting level 30.
+  const templeUnlocked = gameState.completedChapters.includes(70) ||
+    Boolean(gameState.book4Complete) ||
+    Number(gameState.currentBook || 1) >= 4 ||
+    Number(gameState.level || 1) >= 20;
+  if (!templeUnlocked) return '';
+
+  const materials = getMaterials();
+  const afflictions = getAfflictions();
+  const roster = (gameState.party || []).filter(p => p.active || p.joined);
+
+  let html = '<div class="grind-zone-card">' +
+    '<div class="grind-zone-title">🕯️ The Temple</div>' +
+    '<div class="grind-zone-copy">Restored from the Cult of the Closed Eye\'s ruin. The Custodian keeps Purifying Incense on hand for anyone still carrying a locked page.</div>' +
+    '<div class="grind-zone-note">Purifying Incense: ' + Number(materials.purifyingIncense || 0) + '</div>';
+
+  if (!afflictions.length) {
+    html += '<div class="grind-zone-copy">No one in the party is currently afflicted.</div>';
+  } else {
+    afflictions.forEach(a => {
+      const def = CODEX_AFFLICTION_DEFS[a.afflictionId];
+      const member = roster.find(p => p.id === a.memberId);
+      if (!def || !member) return;
+      const canCure = Number(materials.purifyingIncense || 0) >= 1;
+      html += '<div class="grind-encounter">' +
+        '<div>' +
+          '<div class="grind-name">' + def.icon + ' ' + member.name + ' — ' + def.name + '</div>' +
+          '<div class="grind-desc">' + def.desc + '</div>' +
+        '</div>' +
+        '<button class="grind-fight" type="button" ' +
+          (canCure ? '' : 'disabled style="opacity:.4;cursor:not-allowed;"') +
+          ' onclick="codexCureAfflictionFromTemple(\'' + a.memberId + '\',\'' + a.afflictionId + '\')">Cure (1 Incense)</button>' +
+      '</div>';
+    });
+  }
+
+  html += '</div>';
+
+  // Resurrection — separate from battle's once-per-battle Resurrection
+  // spell and from the affliction system. Fallen members are auto-healed
+  // whenever a new battle starts, but that leaves anyone who fell in a
+  // lost/abandoned fight stuck at 0 HP everywhere else in the app until
+  // then. The Temple offers an immediate, gold-cost fix instead.
+  const fallen = roster.filter(p => Number(p.currentHP) <= 0);
+  const reviveCost = 75;
+  html += '<div class="grind-zone-card">' +
+    '<div class="grind-zone-title">✨ Resurrection</div>' +
+    '<div class="grind-zone-copy">The Temple can call a fallen ally back — restored to full HP.</div>';
+  if (!fallen.length) {
+    html += '<div class="grind-zone-copy">Everyone in the party is standing.</div>';
+  } else {
+    fallen.forEach(member => {
+      const canAfford = Number(gameState.gold || 0) >= reviveCost;
+      html += '<div class="grind-encounter">' +
+        '<div>' +
+          '<div class="grind-name">💀 ' + member.name + '</div>' +
+          '<div class="grind-desc">Fallen. Restore to full HP for ' + reviveCost + 'G.</div>' +
+        '</div>' +
+        '<button class="grind-fight" type="button" ' +
+          (canAfford ? '' : 'disabled style="opacity:.4;cursor:not-allowed;"') +
+          ' onclick="codexReviveFallenMember(\'' + member.id + '\')">Revive (' + reviveCost + 'G)</button>' +
+      '</div>';
+    });
+  }
+  html += '</div>';
+
+  return html;
+}
+
+function codexReviveFallenMember(memberId) {
+  const reviveCost = 75;
+  if (Number(gameState.gold || 0) < reviveCost) {
+    if (typeof showNotification === 'function') showNotification('Not enough gold.');
+    return;
+  }
+  const member = (gameState.party || []).find(p => p.id === memberId);
+  if (!member || Number(member.currentHP) > 0) return;
+  gameState.gold -= reviveCost;
+  member.currentHP = member.stats.hp;
+  if (Number.isFinite(member.currentMP) === false || member.currentMP < 0) {
+    member.currentMP = member.stats.mp;
+  }
+  saveGame();
+  if (typeof showNotification === 'function') showNotification(member.name + ' has been revived.');
+  renderExplore();
+}
+
+function codexCureAfflictionFromTemple(memberId, afflictionId) {
+  if (codexCureAffliction(memberId, afflictionId, true)) {
+    const member = (gameState.party || []).find(p => p.id === memberId);
+    if (typeof showNotification === 'function') {
+      showNotification((member ? member.name : 'They') + ' has been purified.');
+    }
+    renderExplore();
+  }
+}
+
 function renderExplore() {
   const list = document.getElementById('grindEncounterList');
   if (!list) return;
@@ -4722,13 +5443,25 @@ function renderExplore() {
       '</div>';
   }
 
-  html +=
-    '<div class="grind-zone-card book5-teaser-card">' +
-      '<div class="grind-zone-title">📖 Book V — On the Horizon</div>' +
-      '<img src="book5/b5ch2_compress.png" alt="Book 5 preview" class="book5-teaser-img">' +
-      '<div class="grind-zone-copy">Beyond the Unmapped Road, the next chapter of the Codex is still being written. Book V continues the Daybreak Seven\'s story — check back as new chapters are added.</div>' +
-      '<div class="grind-zone-note">In the meantime, the Unmapped Road keeps every earlier battle alive.</div>' +
+  html += renderCodexTempleCard();
+
+  const book4Done = gameState.completedChapters.includes(70);
+  const book5Ready = Number(gameState.level || 1) >= BOOK5_UNLOCK_LEVEL;
+  const book5Unlocked = (gameState.unlockedChapters || []).includes(71);
+
+  if (!book5Unlocked) {
+    html += '<div class="grind-zone-card book5-teaser-card">' +
+      '<div class="grind-zone-title">📖 Book V — The Open Doors</div>' +
+      '<img src="book5/b5ch1_compress.png" alt="Book 5 preview" class="book5-teaser-img">';
+    if (!book4Done) {
+      html += '<div class="grind-zone-copy">Beyond the Unmapped Road, Book V is waiting — finish Book IV to take the first step toward it.</div>';
+    } else if (!book5Ready) {
+      html += '<div class="grind-zone-copy">Book V is written and ready. The road ahead calls for a party that has grown a little further first.</div>' +
+        '<div class="grind-zone-note">Unlocks at level ' + BOOK5_UNLOCK_LEVEL + ' (currently level ' + Number(gameState.level || 1) + ').</div>';
+    }
+    html += '<div class="grind-zone-note">In the meantime, the Unmapped Road keeps every earlier battle alive.</div>' +
     '</div>';
+  }
 
   list.innerHTML = html;
 
@@ -4938,6 +5671,10 @@ function getChapterStatus(chapterId) {
 
 function unlockNextChapter(chapterId) {
   const nextId = chapterId + 1;
+  // Book V's opening chapter (71) has its own level-gated unlock via
+  // migrateBook5Integration() — don't let the generic "finish N, open N+1"
+  // rule bypass that gate the moment chapter 70 is completed.
+  if (nextId === 71) return;
   const nextChapter = GAME_DATA.chapters.find(c => c.id === nextId);
   if (nextChapter && !gameState.unlockedChapters.includes(nextId)) {
     gameState.unlockedChapters.push(nextId);
@@ -4953,6 +5690,16 @@ function migrateBook4Integration() {
   if (gameState.completedChapters.includes(52) && Number(gameState.currentBook) < 4) {
     gameState.currentBook = 4;
     gameState.selectedBook = 4;
+  }
+}
+
+function migrateBook5Integration() {
+  if (!Array.isArray(gameState.completedChapters)) return;
+  if (!Array.isArray(gameState.unlockedChapters)) gameState.unlockedChapters=[1];
+  const book4Done = gameState.completedChapters.includes(70);
+  const levelReady = Number(gameState.level || 1) >= BOOK5_UNLOCK_LEVEL;
+  if (book4Done && levelReady && !gameState.unlockedChapters.includes(71)) {
+    gameState.unlockedChapters.push(71);
   }
 }
 
@@ -5118,6 +5865,15 @@ function completeQuest(chapterId) {
     } else if (chapterId === 70) {
       gameState.book4Complete = true;
       document.getElementById('book4Transition').classList.add('active');
+    } else if (chapterId === 71) {
+      gameState.currentBook = 5;
+      gameState.selectedBook = 5;
+      showNotification('Book V — The Open Doors is now available.');
+    }
+
+    // Quest-ally recruitment tied to specific chapter completions.
+    if (chapter && chapter.quest && chapter.quest.recruits) {
+      codexRecruitQuestAlly(chapter.quest.recruits);
     }
 
     updateUI();
@@ -5552,7 +6308,6 @@ function renderParty() {
   });
 
   grid.innerHTML = '';
-  const benchUnlocked = false;
 
   gameState.party.forEach(member => {
     const card = document.createElement('div');
@@ -5586,8 +6341,17 @@ function renderParty() {
 
     if (member.joined) {
       html += '<div class="party-core-status">' +
-        (isFamiliar(member) ? '🐾 Familiar — No Party Slot' : '⭐ Fixed Party') +
+        (isFamiliar(member) ? '🐾 Familiar — No Party Slot' : (member.active ? '⚔️ In the Field' : '🏰 At the Stronghold')) +
         '</div>';
+      if (codexCanBenchMember(member.id)) {
+        html += '<button class="btn-party bench" onclick="codexBenchMember(\'' + member.id + '\')">Bench (send to Stronghold)</button>';
+      } else if (member.joined && !member.active && !FAMILIAR_IDS.has(member.id) && member.id !== 'san') {
+        const atCap = codexActiveRosterCount() >= MAX_ACTIVE_PARTY_SIZE;
+        html += '<button class="btn-party activate" ' + (atCap ? 'disabled style="opacity:.5;cursor:not-allowed;"' : '') +
+          ' onclick="codexActivateMember(\'' + member.id + '\')">Activate' + (atCap ? ' (roster full)' : '') + '</button>';
+      }
+    } else if (QUEST_ALLY_IDS.has(member.id)) {
+      html += '<div class="party-core-status">🔒 Not yet recruited</div>';
     } else {
       html += '<button class="btn-party join" onclick="recruitMember(\'' +
         member.id + '\')">Recruit</button>';
@@ -5597,30 +6361,44 @@ function renderParty() {
     grid.appendChild(card);
   });
 
-  // Keep the UI explicit about why bench controls are not present early on.
+  // Stronghold summary — replaces the old permanently-disabled notice.
   const noticeId = 'partyBenchNotice';
   let notice = document.getElementById(noticeId);
-  if (false) {
+  const activeCount = codexActiveRosterCount();
+  const benched = gameState.party.filter(p => p.joined && !p.active && !FAMILIAR_IDS.has(p.id));
+  const showStronghold = benched.length > 0 || activeCount >= MAX_ACTIVE_PARTY_SIZE;
+  if (showStronghold) {
     if (!notice) {
       notice = document.createElement('div');
       notice.id = noticeId;
       notice.className = 'party-bench-notice';
       grid.parentNode.insertBefore(notice, grid);
     }
-    notice.textContent =
-      'Your core party travels together. Bench / Activate unlocks when additional guild members join.';
+    notice.innerHTML = '🏰 <strong>The Stronghold</strong> — Active roster: ' + activeCount + '/' + MAX_ACTIVE_PARTY_SIZE +
+      (benched.length ? '. Waiting: ' + benched.map(p => p.name).join(', ') + '.' : '.');
   } else if (notice) {
     notice.remove();
   }
 }
 
 function togglePartyMember(id) {
-  showNotification('The Codex uses a fixed core party. There is no bench system.');
+  const member = gameState.party.find(p => p.id === id);
+  if (!member) return;
+  if (member.active) {
+    codexBenchMember(id);
+  } else {
+    codexActivateMember(id);
+  }
 }
 
 function recruitMember(memberId) {
   const member = getPartyMember(memberId);
   if (!member) return;
+  // Quest allies (Aldric, Wren) only ever join through their actual
+  // recruitment chapter (codexRecruitQuestAlly) — this manual path used to
+  // let a player recruit them straight from the Party screen before their
+  // story chapter even fired.
+  if (QUEST_ALLY_IDS.has(memberId)) return;
   member.joined = true;
   member.active = true;
   renderParty();
@@ -5700,6 +6478,7 @@ function updateUI() {
     chapterList.appendChild(item);
   });
   migrateBook4Integration();
+  migrateBook5Integration();
 }
 
 function initParticles() {
