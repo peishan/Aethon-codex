@@ -1,3 +1,18 @@
+// Shortens/replaces the long build-changelog banner in the page footer,
+// regardless of what text is baked into the currently deployed index.html.
+(function shortenCodexBuildBanner() {
+  function apply() {
+    document.querySelectorAll('.codex-build-fixed').forEach(el => {
+      el.textContent = 'Aethon Codex · v12.91';
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', apply);
+  } else {
+    apply();
+  }
+})();
+
 window.codexStartRoadEncounter = function(encounterId) {
   try {
     if (typeof window.startGrindingBattle === 'function') {
@@ -2323,12 +2338,27 @@ function canBenchPartyMember() {
 // GAME STATE
 // ============================================================
 
+const CODEX_POTION_DEFS = {
+  hpPotion: { name: 'HP Potion', icon: '🧪', restoreHP: 50 },
+  mpPotion: { name: 'MP Potion', icon: '💧', restoreMP: 40 }
+};
+
+function getPotions() {
+  if (!gameState.potions || typeof gameState.potions !== 'object') {
+    gameState.potions = { hpPotion: 3, mpPotion: 5 };
+  }
+  if (!Number.isFinite(Number(gameState.potions.hpPotion))) gameState.potions.hpPotion = 0;
+  if (!Number.isFinite(Number(gameState.potions.mpPotion))) gameState.potions.mpPotion = 0;
+  return gameState.potions;
+}
+
 let gameState = {
   currentBook: 1,
   selectedBook: 1,
   xp: 0,
   level: 1,
   gold: 0,
+  potions: { hpPotion: 3, mpPotion: 5 },
   inventory: [],
   memories: [],
   completedChapters: [],
@@ -2924,8 +2954,12 @@ function companionAIAction(member, battle) {
 
   // Eliz — Healer / Resurrection.
   if (member.id === 'eliz') {
-    const living = active.filter(p => p.currentHP > 0);
-    const fallen = active.filter(p =>
+    // NOTE: getActiveParty() only returns members with currentHP > 0, so it
+    // can never contain a fallen ally. Use the full active-flagged roster
+    // here so resurrection can actually be detected and chosen.
+    const roster = gameState.party.filter(p => p.active);
+    const living = roster.filter(p => p.currentHP > 0);
+    const fallen = roster.filter(p =>
       p.currentHP <= 0 &&
       p.id !== 'eliz' &&
       p.id !== 'soel'
@@ -3449,7 +3483,14 @@ function advanceBattleTurn() {
   let attempts = 0;
   do {
     battle.turnIndex = (battle.turnIndex + 1) % order.length;
-    if (battle.turnIndex === 0) battle.round++;
+    if (battle.turnIndex === 0) {
+      battle.round++;
+      // This flag is named "ThisRound" (battle._elizHealUsedThisRound) but
+      // was never actually cleared anywhere, which silently turned it into
+      // a once-per-battle flag — Eliz could only ever heal a single time in
+      // an entire fight. Reset it here so it behaves as its name promises.
+      battle._elizHealUsedThisRound = false;
+    }
     attempts++;
     const member = getCurrentBattleMember();
     if (member && member.currentHP > 0) return;
@@ -3700,6 +3741,26 @@ function playerAction(actionType, spellIndex) {
   } else if (actionType === 'defend') {
     addCombatLog('San takes a defensive stance!', 'info');
     finishPlayerAction();
+
+  } else if (actionType === 'useItem' && spellIndex) {
+    const potions = getPotions();
+    const def = CODEX_POTION_DEFS[spellIndex];
+    if (!def || !(Number(potions[spellIndex]) > 0)) {
+      gameState.battleInputLocked = false;
+      addCombatLog('No ' + (def ? def.name : 'item') + ' left!', 'info');
+      renderBattle();
+      return;
+    }
+    potions[spellIndex] -= 1;
+    if (def.restoreHP) {
+      healPartyMember('san', def.restoreHP);
+      addCombatLog(def.icon + ' San uses a ' + def.name + ' and recovers ' + def.restoreHP + ' HP!', 'heal');
+    } else if (def.restoreMP) {
+      restoreMP('san', def.restoreMP);
+      addCombatLog(def.icon + ' San uses a ' + def.name + ' and recovers ' + def.restoreMP + ' MP!', 'heal');
+    }
+    finishPlayerAction();
+
   } else {
     gameState.battleInputLocked = false;
   }
@@ -3857,6 +3918,19 @@ function renderBattle() {
 
     html += '<button class="battle-action-btn defend" onclick="playerAction(\'defend\')"><span class="battle-action-icon">🛡️</span><span class="battle-action-label">Defend</span><span class="battle-action-sub">Reduce damage</span></button>';
     html += '</div>';
+
+    // Potion bar — lets San use an item on her own turn instead of attacking.
+    const potions = getPotions();
+    html += '<div class="battle-actions potion-bar">';
+    html += '<button class="battle-action-btn item" type="button" ' +
+      (potions.hpPotion > 0 ? 'onclick="playerAction(\'useItem\',\'hpPotion\')"' : 'disabled style="opacity:.4;cursor:not-allowed;"') +
+      '><span class="battle-action-icon">🧪</span><span class="battle-action-label">HP Potion</span><span class="battle-action-sub">+' +
+      CODEX_POTION_DEFS.hpPotion.restoreHP + ' HP · x' + potions.hpPotion + '</span></button>';
+    html += '<button class="battle-action-btn item" type="button" ' +
+      (potions.mpPotion > 0 ? 'onclick="playerAction(\'useItem\',\'mpPotion\')"' : 'disabled style="opacity:.4;cursor:not-allowed;"') +
+      '><span class="battle-action-icon">💧</span><span class="battle-action-label">MP Potion</span><span class="battle-action-sub">+' +
+      CODEX_POTION_DEFS.mpPotion.restoreMP + ' MP · x' + potions.mpPotion + '</span></button>';
+    html += '</div>';
   } else if (battle.active && currentMember && gameState.battleInputLocked) {
     html += '<div class="battle-turn-status">⚔️ ' + currentMember.name + ' takes their turn.</div>';
   }
@@ -3895,6 +3969,9 @@ function renderBattle() {
       html += '<h3 style="color:var(--red-accent);font-family:Cinzel,serif;">DEFEAT...</h3>';
       html += '<p style="color:var(--parchment);">The party has fallen. But bonds transcend defeat.</p>';
       html += '<button class="btn-quest" onclick="retryBattle()" style="margin-top:12px;">Try Again</button>';
+      if (battle.grind) {
+        html += '<button class="btn-quest complete" onclick="switchTab(\'explore\')" style="margin-top:12px;margin-left:8px;">Return to The Unmapped Road</button>';
+      }
       html += '</div>';
     }
   }
@@ -3990,7 +4067,10 @@ const CODEX_TRADERS = [
       {n:'Woodsman Blade', type:'equipment', slot:'weapon', family:'any', atk:2, price:45, d:'A dependable starter weapon.'},
       {n:'Traveler Guard', type:'equipment', slot:'armor', family:'light', defense:2, price:50, d:'Simple protective gear for the road.'},
       {n:'Apprentice Focus', type:'equipment', slot:'weapon', family:'san_focus', magic:1, price:55, d:'A modest focus for a beginning sorcerer.'},
-      {n:'Traveler Charm', type:'equipment', slot:'accessory', family:'any', hp:3, price:40, d:'A small charm carried by travelers.'}
+      {n:'Traveler Charm', type:'equipment', slot:'accessory', family:'any', hp:3, price:40, d:'A small charm carried by travelers.'},
+      {n:'HP Potion', type:'potion', potionId:'hpPotion', price:15, d:'Restores ' + CODEX_POTION_DEFS.hpPotion.restoreHP + ' HP in battle.'},
+      {n:'MP Potion', type:'potion', potionId:'mpPotion', price:20, d:'Restores ' + CODEX_POTION_DEFS.mpPotion.restoreMP + ' MP in battle.'},
+      {n:'Potion Refill Bundle', type:'potionBundle', hpPotion:3, mpPotion:5, price:130, d:'Tops up 3 HP Potions and 5 MP Potions in one go.'}
     ]
   },
   {
@@ -4048,6 +4128,28 @@ function buyFromCodexTrader(traderName,itemIndex){
   const basePrice=Number(item.price||0);
   const price=getTraderPriceWithHaggling(basePrice);
   if(Number(gameState.gold||0)<price){showNotification('Not enough gold.');return;}
+
+  if (item.type === 'potion') {
+    const potions = getPotions();
+    potions[item.potionId] = Number(potions[item.potionId] || 0) + 1;
+    gameState.gold -= price;
+    saveGame(); renderCodexTraderPanel();
+    showNotification('Bought ' + item.n + ' for ' + price + 'G.');
+    if (typeof renderTrader === 'function') renderTrader();
+    return;
+  }
+
+  if (item.type === 'potionBundle') {
+    const potions = getPotions();
+    potions.hpPotion = Number(potions.hpPotion || 0) + Number(item.hpPotion || 0);
+    potions.mpPotion = Number(potions.mpPotion || 0) + Number(item.mpPotion || 0);
+    gameState.gold -= price;
+    saveGame(); renderCodexTraderPanel();
+    showNotification('Bought ' + item.n + ' for ' + price + 'G.');
+    if (typeof renderTrader === 'function') renderTrader();
+    return;
+  }
+
   const copy={
     ...item,
     name:item.n,
@@ -4075,7 +4177,7 @@ function renderTrader() {
   if(!list)return;
   if(gold)gold.textContent=Number(gameState.gold||0);
   const traders=Array.isArray(CODEX_TRADERS)?CODEX_TRADERS:[];
-  list.innerHTML=traders.map((trader)=>{
+  let html=traders.map((trader)=>{
     const unlocked=trader.n==='Lewis'||Number(gameState.level||0)>=Number(trader.zoneLv||1);
     let s='<div class="trader-card '+(unlocked?'':'locked')+'">';
     s+='<div class="trader-name">'+(trader.icon||'🧳')+' '+trader.n+'</div>';
@@ -4085,17 +4187,42 @@ function renderTrader() {
     } else {
       s+='<div class="trader-greeting">'+trader.greeting+'</div><div class="trader-stock">';
       (trader.stock||[]).forEach((item,ii)=>{
-        const price=Number(item.price||0);
+        const basePrice=Number(item.price||0);
+        const price=getTraderPriceWithHaggling(basePrice);
         const can=Number(gameState.gold||0)>=price;
+        const priceLabel=price<basePrice
+          ? '<span style="text-decoration:line-through;opacity:.55">'+basePrice+'G</span> '+price+'G'
+          : price+'G';
         s+='<div class="trader-item"><div><div class="trader-item-name">✦ '+item.n+'</div>';
         s+='<div class="trader-item-meta">'+item.d+'</div></div>';
         s+='<button class="trader-buy" '+(can?'':'disabled')+
-          ' onclick="buyFromCodexTrader(\''+trader.n+'\','+ii+')">'+price+'G</button></div>';
+          ' onclick="buyFromCodexTrader(\''+trader.n+'\','+ii+')">'+priceLabel+'</button></div>';
       });
       s+='</div>';
     }
     return s+'</div>';
   }).join('');
+
+  // Sell-back: turn unequipped loot/equipment into gold from the same panel.
+  const sellItems = codexInventoryItems();
+  html += '<div class="trader-card"><div class="trader-name">💰 Sell Your Loot</div>' +
+    '<div class="trader-zone">Any trader here will buy back unequipped gear.</div>';
+  if (!sellItems.length) {
+    html += '<div class="trader-item-meta">Nothing to sell right now.</div>';
+  } else {
+    html += '<div class="trader-stock">';
+    sellItems.forEach((item, i) => {
+      const value = codexItemSellValue(item);
+      html += '<div class="trader-item"><div><div class="trader-item-name">✦ ' + item.name +
+        '</div><div class="trader-item-meta">' + item.slot + ' · ' + (item.acquiredFrom || 'unknown source') + '</div></div>';
+      html += '<button class="trader-buy" data-index="' + i +
+        '" onclick="codexSellInventoryItem(Number(this.dataset.index)); renderTrader();">Sell for ' + value + 'G</button></div>';
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+
+  list.innerHTML = html;
 }
 
 
@@ -5134,9 +5261,13 @@ function renderCodexInventory() {
   if(!el)return;
   const items=codexInventoryItems();
   const state=codexEnsureEquipmentState();
+  const potions=getPotions();
 
   const roster=['san','joel','aisyah','mezstorm','eliz','senedra','zaki'];
   const names={san:'San',joel:'Joel',aisyah:'Aisyah',mezstorm:'Mezstorm',eliz:'Eliz',senedra:'Senedra',zaki:'Zaki'};
+
+  let potionCard='<div class="inventory-card"><div class="inventory-section-title">Potions</div>'+
+    '<div class="inventory-item-meta">🧪 HP Potion x'+potions.hpPotion+' · 💧 MP Potion x'+potions.mpPotion+'</div></div>';
 
   let equipped='<div class="inventory-card"><div class="inventory-section-title">Equipped</div>';
 
@@ -5175,14 +5306,38 @@ function renderCodexInventory() {
         '<button class="equip-btn" data-index="'+i+'" data-character="'+id+
         '" onclick="codexEquipFromInventory(Number(this.dataset.index), this.dataset.character)">Equip to '+names[id]+'</button>'
       ).join(' ');
+      const sellValue=codexItemSellValue(item);
+      const sellBtn='<button class="equip-btn sell-btn" data-index="'+i+
+        '" onclick="codexSellInventoryItem(Number(this.dataset.index))">Sell for '+sellValue+'G</button>';
       return '<div class="inventory-item"><div class="inventory-item-name">'+item.name+
         '</div><div class="inventory-item-meta">'+item.slot+' · '+(item.acquiredFrom||'unknown source')+
-        '</div><div class="equip-actions">'+buttons+'</div></div>';
+        '</div><div class="equip-actions">'+buttons+' '+sellBtn+'</div></div>';
     }).join('');
   }
   inventory+='</div>';
 
-  el.innerHTML=equipped+inventory;
+  el.innerHTML=potionCard+equipped+inventory;
+}
+
+// Simple valuation for loot/equipment items so traders can buy them back —
+// no per-item price table exists yet, so this derives a fair gold value
+// from the item's combined stat bonuses (higher-stat gear sells for more).
+function codexItemSellValue(item) {
+  const statTotal = Number(item.atk||0) + Number(item.magic||item.mag||0) +
+    Number(item.defense||item.def||0) + Number(item.hp||0);
+  return Math.max(15, 20 + statTotal * 12);
+}
+
+function codexSellInventoryItem(index) {
+  const inventory = codexEnsureEquipmentInventory();
+  const item = inventory[Number(index)];
+  if (!item) return;
+  const value = codexItemSellValue(item);
+  inventory.splice(Number(index), 1);
+  gameState.gold = Number(gameState.gold || 0) + value;
+  saveGame();
+  renderCodexInventory();
+  showNotification('Sold ' + item.name + ' for ' + value + 'G.');
 }
 
 function codexEquipFromInventory(index, characterId) {
