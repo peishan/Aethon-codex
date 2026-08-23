@@ -2340,15 +2340,17 @@ function canBenchPartyMember() {
 
 const CODEX_POTION_DEFS = {
   hpPotion: { name: 'HP Potion', icon: '🧪', restoreHP: 50 },
-  mpPotion: { name: 'MP Potion', icon: '💧', restoreMP: 40 }
+  mpPotion: { name: 'MP Potion', icon: '💧', restoreMP: 40 },
+  elixir: { name: 'Codex Elixir', icon: '✨', restoreHP: 100, restoreMP: 80 }
 };
 
 function getPotions() {
   if (!gameState.potions || typeof gameState.potions !== 'object') {
-    gameState.potions = { hpPotion: 3, mpPotion: 5 };
+    gameState.potions = { hpPotion: 3, mpPotion: 5, elixir: 0 };
   }
   if (!Number.isFinite(Number(gameState.potions.hpPotion))) gameState.potions.hpPotion = 0;
   if (!Number.isFinite(Number(gameState.potions.mpPotion))) gameState.potions.mpPotion = 0;
+  if (!Number.isFinite(Number(gameState.potions.elixir))) gameState.potions.elixir = 0;
   return gameState.potions;
 }
 
@@ -3752,13 +3754,18 @@ function playerAction(actionType, spellIndex) {
       return;
     }
     potions[spellIndex] -= 1;
+    // Apply both HP and MP restoration if the item grants both (e.g. the
+    // Codex Elixir), instead of only the first that happens to be truthy.
+    const gains = [];
     if (def.restoreHP) {
       healPartyMember('san', def.restoreHP);
-      addCombatLog(def.icon + ' San uses a ' + def.name + ' and recovers ' + def.restoreHP + ' HP!', 'heal');
-    } else if (def.restoreMP) {
-      restoreMP('san', def.restoreMP);
-      addCombatLog(def.icon + ' San uses a ' + def.name + ' and recovers ' + def.restoreMP + ' MP!', 'heal');
+      gains.push('+' + def.restoreHP + ' HP');
     }
+    if (def.restoreMP) {
+      restoreMP('san', def.restoreMP);
+      gains.push('+' + def.restoreMP + ' MP');
+    }
+    addCombatLog(def.icon + ' San uses a ' + def.name + ' and recovers ' + gains.join(' and ') + '!', 'heal');
     finishPlayerAction();
 
   } else {
@@ -3930,6 +3937,10 @@ function renderBattle() {
       (potions.mpPotion > 0 ? 'onclick="playerAction(\'useItem\',\'mpPotion\')"' : 'disabled style="opacity:.4;cursor:not-allowed;"') +
       '><span class="battle-action-icon">💧</span><span class="battle-action-label">MP Potion</span><span class="battle-action-sub">+' +
       CODEX_POTION_DEFS.mpPotion.restoreMP + ' MP · x' + potions.mpPotion + '</span></button>';
+    html += '<button class="battle-action-btn item" type="button" ' +
+      (potions.elixir > 0 ? 'onclick="playerAction(\'useItem\',\'elixir\')"' : 'disabled style="opacity:.4;cursor:not-allowed;"') +
+      '><span class="battle-action-icon">✨</span><span class="battle-action-label">Codex Elixir</span><span class="battle-action-sub">+' +
+      CODEX_POTION_DEFS.elixir.restoreHP + ' HP / +' + CODEX_POTION_DEFS.elixir.restoreMP + ' MP · x' + potions.elixir + '</span></button>';
     html += '</div>';
   } else if (battle.active && currentMember && gameState.battleInputLocked) {
     html += '<div class="battle-turn-status">⚔️ ' + currentMember.name + ' takes their turn.</div>';
@@ -5316,7 +5327,7 @@ function renderCodexInventory() {
   }
   inventory+='</div>';
 
-  el.innerHTML=potionCard+equipped+inventory;
+  el.innerHTML=potionCard+renderCodexCrafting()+equipped+inventory;
 }
 
 // Simple valuation for loot/equipment items so traders can buy them back —
@@ -5338,6 +5349,101 @@ function codexSellInventoryItem(index) {
   saveGame();
   renderCodexInventory();
   showNotification('Sold ' + item.name + ' for ' + value + 'G.');
+}
+
+/* ============================================================
+   CODEX CRAFTING — "The Codex remembers what is broken down."
+   Two salvage recipes turn any spare, unequipped loot into potions
+   (thematically: the Codex reclaims discarded gear as raw essence).
+   One signature recipe combines specific early-game loot into a rare
+   dual-restore Elixir, so hunting for its ingredients feels like a
+   small side-quest rather than just busywork.
+   ============================================================ */
+const CODEX_RECIPES = [
+  {
+    id: 'salvage_hp',
+    name: 'Salvage into HP Potion',
+    icon: '🧪',
+    desc: 'The Codex breaks down 2 unequipped items into a restorative brew.',
+    namedCost: [],
+    anyCost: 2,
+    yieldPotion: 'hpPotion',
+    yieldAmount: 1
+  },
+  {
+    id: 'salvage_mp',
+    name: 'Salvage into MP Potion',
+    icon: '💧',
+    desc: 'The Codex breaks down 2 unequipped items into a mana-rich brew.',
+    namedCost: [],
+    anyCost: 2,
+    yieldPotion: 'mpPotion',
+    yieldAmount: 1
+  },
+  {
+    id: 'codex_elixir',
+    name: 'Brew a Codex Elixir',
+    icon: '✨',
+    desc: 'Requires an Arcane Shard, a Traveler Charm, and one more unequipped item. Yields an elixir that restores both HP and MP at once.',
+    namedCost: ['Arcane Shard', 'Traveler Charm'],
+    anyCost: 1,
+    yieldPotion: 'elixir',
+    yieldAmount: 1
+  }
+];
+
+// Checks feasibility without mutating the inventory: removes the named
+// ingredients from a scratch copy first, then confirms enough items remain
+// for the "any" portion of the cost.
+function codexRecipeCanCraft(recipe) {
+  const inventory = codexEnsureEquipmentInventory();
+  const remaining = inventory.slice();
+  for (const name of (recipe.namedCost || [])) {
+    const idx = remaining.findIndex(it => it.name === name);
+    if (idx < 0) return false;
+    remaining.splice(idx, 1);
+  }
+  return remaining.length >= Number(recipe.anyCost || 0);
+}
+
+function codexCraftRecipe(recipeId) {
+  const recipe = CODEX_RECIPES.find(r => r.id === recipeId);
+  if (!recipe) return;
+  if (!codexRecipeCanCraft(recipe)) {
+    showNotification('Missing materials for ' + recipe.name + '.');
+    return;
+  }
+
+  const inventory = codexEnsureEquipmentInventory();
+  (recipe.namedCost || []).forEach(name => {
+    const idx = inventory.findIndex(it => it.name === name);
+    if (idx >= 0) inventory.splice(idx, 1);
+  });
+  for (let i = 0; i < Number(recipe.anyCost || 0); i++) {
+    if (inventory.length) inventory.splice(0, 1);
+  }
+
+  const potions = getPotions();
+  potions[recipe.yieldPotion] = Number(potions[recipe.yieldPotion] || 0) + Number(recipe.yieldAmount || 1);
+
+  saveGame();
+  renderCodexInventory();
+  if (typeof renderTrader === 'function') renderTrader();
+  showNotification('Crafted ' + recipe.name + '!');
+}
+
+function renderCodexCrafting() {
+  let html = '<div class="inventory-card"><div class="inventory-section-title">Codex Crafting</div>';
+  CODEX_RECIPES.forEach(recipe => {
+    const can = codexRecipeCanCraft(recipe);
+    html += '<div class="inventory-item"><div class="inventory-item-name">' + recipe.icon + ' ' + recipe.name + '</div>' +
+      '<div class="inventory-item-meta">' + recipe.desc + '</div>' +
+      '<div class="equip-actions"><button class="equip-btn" ' +
+      (can ? '' : 'disabled style="opacity:.4;cursor:not-allowed;"') +
+      ' onclick="codexCraftRecipe(\'' + recipe.id + '\')">Craft</button></div></div>';
+  });
+  html += '</div>';
+  return html;
 }
 
 function codexEquipFromInventory(index, characterId) {
