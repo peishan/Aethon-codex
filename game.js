@@ -13,6 +13,22 @@
   }
 })();
 
+// Removes the leftover "Test Senedra — Final Ability" dev/debug button that
+// was left sitting on the landing page footer. Done from game.js (rather
+// than editing index.html) so the fix works regardless of which index.html
+// build is actually deployed.
+(function removeSenedraTestButton() {
+  function apply() {
+    const btn = document.getElementById('senedra-ability-test-v170');
+    if (btn) btn.remove();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', apply);
+  } else {
+    apply();
+  }
+})();
+
 window.codexStartRoadEncounter = function(encounterId) {
   try {
     if (typeof window.startGrindingBattle === 'function') {
@@ -2354,27 +2370,31 @@ function getPotions() {
   return gameState.potions;
 }
 
-let gameState = {
-  currentBook: 1,
-  selectedBook: 1,
-  xp: 0,
-  level: 1,
-  gold: 0,
-  potions: { hpPotion: 3, mpPotion: 5 },
-  inventory: [],
-  memories: [],
-  completedChapters: [],
-  activeQuests: [],
-  completedQuests: [],
-  unlockedChapters: [1],
-  currentTab: 'dashboard',
-  journalChapter: null,
-  battleState: null,
-  battleInputLocked: false,
-  bondPoints: 0,
-  readJournal: [],
-  party: GAME_DATA.partyMembers.map(p => ({ ...p, currentHP: p.stats.hp, currentMP: p.stats.mp, buffs: [], debuffs: [] }))
-};
+function createInitialGameState() {
+  return {
+    currentBook: 1,
+    selectedBook: 1,
+    xp: 0,
+    level: 1,
+    gold: 0,
+    potions: { hpPotion: 3, mpPotion: 5, elixir: 0 },
+    inventory: [],
+    memories: [],
+    completedChapters: [],
+    activeQuests: [],
+    completedQuests: [],
+    unlockedChapters: [1],
+    currentTab: 'dashboard',
+    journalChapter: null,
+    battleState: null,
+    battleInputLocked: false,
+    bondPoints: 0,
+    readJournal: [],
+    party: GAME_DATA.partyMembers.map(p => ({ ...p, currentHP: p.stats.hp, currentMP: p.stats.mp, buffs: [], debuffs: [] }))
+  };
+}
+
+let gameState = createInitialGameState();
 
 // ============================================================
 // SAVE / LOAD SYSTEM
@@ -2406,6 +2426,7 @@ function applySaveData(data) {
     xp: 0,
     level: 1,
     gold: 0,
+    potions: { hpPotion: 3, mpPotion: 5, elixir: 0 },
     inventory: [],
     memories: [],
     completedChapters: [],
@@ -2437,6 +2458,13 @@ function applySaveData(data) {
   arrayFields.forEach(key => {
     if (!Array.isArray(gameState[key])) gameState[key] = [];
   });
+
+  // A save with a malformed (non-object) potions field shouldn't linger —
+  // getPotions() also self-heals, but fixing it here keeps gameState
+  // consistent immediately after load rather than on next access.
+  if (!gameState.potions || typeof gameState.potions !== 'object') {
+    gameState.potions = { hpPotion: 3, mpPotion: 5, elixir: 0 };
+  }
 
   // Older saves can contain a stale/partial battle object. Never resume an
   // unknown battle state during this migration; story progression is safer.
