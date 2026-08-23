@@ -5933,7 +5933,7 @@ function renderExplore() {
 }
 
 
-function startGrindingBattle(zoneId, encounterId) 
+function startGrindingBattleImpl(zoneId, encounterId) 
 {
   if (zoneId !== 'unmappedRoad') return false;
 
@@ -6009,6 +6009,24 @@ function startGrindingBattle(zoneId, encounterId)
   nextTurn();
   return true;
 }
+window.startGrindingBattle = function(zoneId, encounterId) {
+  try {
+    if (typeof window._startGrindingBattleImpl === 'function') {
+      return window._startGrindingBattleImpl(zoneId, encounterId);
+    }
+    if (typeof startGrindingBattleImpl === 'function') {
+      return startGrindingBattleImpl(zoneId, encounterId);
+    }
+  } catch (e) {
+    console.error('startGrindingBattle failed:', e);
+    if (typeof showNotification === 'function') showNotification('Could not start this encounter.');
+    return false;
+  }
+  console.error('startGrindingBattle is unavailable');
+  if (typeof showNotification === 'function') showNotification('Could not start this encounter.');
+  return false;
+};
+
 
 
 function finishGrindingBattle() 
@@ -6779,7 +6797,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeQuestModal();
 });
 </script>
-<div class="codex-build-fixed">AETHON CODEX · BUILD v12.87 — UNMAPPED ROAD LEVEL 20+ MONSTERS — UNMAPPED ROAD REPEATABLE BOSS ZONE — CLEAN TEST CONTROLS — AISYAH HAGGLING TRADER TEST — AISYAH HAGGLING SHOP TEST — SENEDRA FINAL ABILITY TEST</div>
+<div class="codex-build-fixed">AETHON CODEX · BUILD v12.88 — UNMAPPED ROAD FIGHT BUTTON FIX — UNMAPPED ROAD LEVEL 20+ MONSTERS — UNMAPPED ROAD REPEATABLE BOSS ZONE — CLEAN TEST CONTROLS — AISYAH HAGGLING TRADER TEST — AISYAH HAGGLING SHOP TEST — SENEDRA FINAL ABILITY TEST</div>
 
 <button id="senedra-ability-test-v170" type="button"
  onclick="startSenedraAbilitiesTestV172()"
